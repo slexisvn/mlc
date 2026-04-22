@@ -13,7 +13,7 @@
 // should not be called by user code.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { DType, Shape, Attrs } from "./types";
+import { DType, Shape, Attrs, ConstantPayload } from "./types";
 
 // ─── Module-level ID counters ─────────────────────────────────────────────────
 
@@ -36,6 +36,9 @@ export function resetCounters(): void {
 /**
  * An immutable value flowing through the graph.
  * Each tensor has exactly one producer node (or is a graph input).
+ *
+ * `constantPayload` is attached by ConstantFoldingPass when it can evaluate
+ * a tensor's value at compile time.  Absent on non-constant tensors.
  */
 export interface Tensor {
   readonly id: string;
@@ -44,6 +47,8 @@ export interface Tensor {
   readonly shape: Shape;
   /** null iff this tensor is a graph-level input (no producing node). */
   readonly producerNodeId: string | null;
+  /** Compile-time constant value, if known.  Set by ConstantFoldingPass. */
+  readonly constantPayload?: ConstantPayload;
 }
 
 /**
@@ -238,6 +243,64 @@ export class Graph {
     this._outputs = this._outputs.map(id => (id === oldId ? newId : id));
   }
 
+  /**
+   * Attach (or overwrite) the compile-time constant payload on a tensor.
+   * Used exclusively by ConstantFoldingPass after it evaluates an op.
+   */
+  _setConstantPayload(tensorId: string, payload: ConstantPayload): void {
+    const t = this._tensors.get(tensorId);
+    if (!t) throw new Error(`_setConstantPayload: tensor "${tensorId}" not found`);
+    this._tensors.set(tensorId, { ...t, constantPayload: payload });
+  }
+
+  /**
+   * Replace a computation node with a "const" source node that has no inputs.
+   *
+   * After constant folding evaluates a node's output(s), we replace the original
+   * compute node with a "const" pseudo-node so that:
+   *   1. The SSA invariant is maintained (each output tensor still has exactly
+   *      one producer — the new const node).
+   *   2. The const node carries no input edges, which lets a subsequent
+   *      DeadCodeEliminationPass prune the formerly-feeding upstream nodes.
+   *
+   * The output tensors keep their existing ids and metadata (including the newly
+   * attached `constantPayload`); only their `producerNodeId` is updated.
+   *
+   * @param nodeId      The id of the node to replace.
+   * @param constNodeId A unique id for the replacement const node.
+   * @param attrs       Optional extra attrs (e.g. `{ foldedFrom: "add" }`).
+   */
+  _replaceWithConstNode(nodeId: string, constNodeId: string, attrs: Attrs = {}): void {
+    const original = this._nodes.get(nodeId);
+    if (!original) throw new Error(`_replaceWithConstNode: node "${nodeId}" not found`);
+
+    // Repoint each output tensor's producerNodeId to the new const node.
+    for (const tid of original.outputs) {
+      const t = this._tensors.get(tid);
+      if (t) this._tensors.set(tid, { ...t, producerNodeId: constNodeId });
+    }
+
+    const constNode: Node = {
+      id:      constNodeId,
+      op:      "const",
+      inputs:  [],
+      outputs: [...original.outputs],
+      attrs:   { foldedFrom: original.op, ...attrs },
+    };
+
+    // Swap in-place within the order list so the const node occupies the same
+    // position — the graph stays in valid topological order.
+    const idx = this._nodeOrder.indexOf(nodeId);
+    if (idx >= 0) {
+      this._nodeOrder[idx] = constNodeId;
+    } else {
+      this._nodeOrder.push(constNodeId);
+    }
+
+    this._nodes.delete(nodeId);
+    this._nodes.set(constNodeId, constNode);
+  }
+
   // ─── Cloning ──────────────────────────────────────────────────────────────
 
   /**
@@ -249,7 +312,12 @@ export class Graph {
     const g = new Graph(this.id + "_opt");
 
     for (const t of this._tensors.values()) {
-      g._tensors.set(t.id, { ...t, shape: [...t.shape] });
+      g._tensors.set(t.id, {
+        ...t,
+        shape:           [...t.shape],
+        // Preserve constant payload when present; data array is already readonly.
+        constantPayload: t.constantPayload,
+      });
     }
     for (const n of this._nodes.values()) {
       g._nodes.set(n.id, {

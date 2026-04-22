@@ -15,6 +15,20 @@ export type Shape = number[];
 export type Attrs = Record<string, unknown>;
 
 /**
+ * Compile-time constant value attached to a Tensor.
+ *
+ * `data` is a flat row-major array of the tensor's element values.
+ * For a scalar tensor (shape = []) `data` contains exactly one element.
+ * This payload is produced by ConstantFoldingPass and consumed by CSEPass
+ * (for value-based equivalence of constant tensors) and DeadCodeEliminationPass
+ * (which marks constant tensors as always live if they are graph outputs).
+ */
+export interface ConstantPayload {
+  /** Flat row-major element values, length === product of shape dims (or 1 for scalar). */
+  readonly data: readonly number[];
+}
+
+/**
  * A fusion rule maps a linear sequence of op names to a single fused op.
  *
  * Example:

@@ -76,13 +76,18 @@ export interface Assign {
  * Counted for-loop.
  *
  * Iterates the induction variable `var.name` from `lo` (inclusive) to `hi`
- * (exclusive) in unit steps.  `hi === -1` signals an unknown / dynamic bound.
+ * (exclusive) in unit steps.  `hi === -1` signals a dynamic bound; in that
+ * case `hiExpr` carries the symbolic upper-bound expression (e.g. the result
+ * of a min() for edge-tile handling after loop tiling).
  */
 export interface ForLoop {
   readonly kind: "ForLoop";
   readonly var: LoopVar;
   readonly lo: number;
+  /** Static upper bound, or -1 when the bound is dynamic (see `hiExpr`). */
   readonly hi: number;
+  /** Present iff `hi === -1`. Evaluated in the enclosing scope. */
+  readonly hiExpr?: LoopExpr;
   readonly body: readonly LoopStmt[];
 }
 
@@ -152,6 +157,24 @@ export function assign(target: MemRef, value: LoopExpr, accumulate = false): Ass
 
 export function forLoop(varName: string, lo: number, hi: number, body: readonly LoopStmt[]): ForLoop {
   return { kind: "ForLoop", var: loopVar(varName), lo, hi, body };
+}
+
+/**
+ * Build a ForLoop with a dynamic upper bound (used for edge-tile loops).
+ *
+ * Sets `hi = -1` and attaches `hiExpr` so the printer and code generator
+ * can emit a runtime min() expression instead of a static constant.
+ *
+ * Example for a tiled inner loop with non-divisible bound:
+ *   `for v_i in [0, min(T, N − v_o*T)):`
+ */
+export function forLoopDyn(
+  varName: string,
+  lo: number,
+  hiExpr: LoopExpr,
+  body: readonly LoopStmt[],
+): ForLoop {
+  return { kind: "ForLoop", var: loopVar(varName), lo, hi: -1, hiExpr, body };
 }
 
 /**

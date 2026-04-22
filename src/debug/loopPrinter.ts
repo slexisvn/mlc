@@ -87,7 +87,13 @@ function _printStmt(stmt: LoopStmt, indent: number): void {
   const pad = " ".repeat(indent);
 
   if (stmt.kind === "ForLoop") {
-    const hiStr = stmt.hi === -1 ? "?" : String(stmt.hi);
+    // Show symbolic hiExpr when the bound is dynamic (edge-tile loops).
+    const hiStr =
+      stmt.hi === -1
+        ? stmt.hiExpr !== undefined
+          ? _fmtExpr(stmt.hiExpr)
+          : "?"
+        : String(stmt.hi);
     console.log(`${pad}for ${stmt.var.name} in [${stmt.lo}, ${hiStr}):`);
     for (const s of stmt.body) {
       _printStmt(s, indent + 2);

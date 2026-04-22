@@ -3,11 +3,12 @@
 //
 // Public API surface + demo runner.
 // ─────────────────────────────────────────────────────────────────────────────
-
+import { stdout } from "process";
+stdout.setDefaultEncoding("utf8");
 // ── IR layer ──────────────────────────────────────────────────────────────────
 export { Graph, resetCounters } from "./ir/graph";
 export type { Tensor, Node }    from "./ir/graph";
-export type { DType, Shape, Attrs, FusionRule, ChainCandidate } from "./ir/types";
+export type { DType, Shape, Attrs, FusionRule, ChainCandidate, ConstantPayload } from "./ir/types";
 export { validateGraph }        from "./ir/validate";
 export type { ValidationResult, ValidationError, ValidationErrorKind } from "./ir/validate";
 
@@ -18,8 +19,29 @@ export type {
   ForLoop, Assign,
 } from "./ir/loopIR";
 export {
-  loopVar, memRef, binOp, callBuiltin, literal, assign, forLoop, nestedLoops,
+  loopVar, memRef, binOp, callBuiltin, literal, assign, forLoop, forLoopDyn, nestedLoops,
 } from "./ir/loopIR";
+
+// ── Loop IR validator ─────────────────────────────────────────────────────────
+export { validateLoopModule } from "./ir/validateLoop";
+export type {
+  LoopValidationResult, LoopValidationError, LoopValidationErrorKind,
+} from "./ir/validateLoop";
+
+// ── Loop IR analysis ─────────────────────────────────────────────────────────
+export {
+  extractPerfectNest, isPerfectNest, isSameIterSpace,
+  collectExprBuffers, collectReads, collectWrites,
+  isReductionLoop,
+  substituteExpr, substituteStmt,
+  rebuildNest, stripMine,
+  analyzeFusionCandidates, analyzeTilingCandidates,
+} from "./analysis/loopAnalysis";
+export type {
+  PerfectNestLevel, PerfectNestInfo,
+  FusionCandidate, FusionRejection, LoopFusionAnalysis,
+  TilingCandidate, TilingRejection, LoopTilingAnalysis,
+} from "./analysis/loopAnalysis";
 
 // ── Layout model ──────────────────────────────────────────────────────────────
 export {
@@ -75,8 +97,17 @@ export type { PassManagerOptions } from "./passes/passManager";
 export { FusionPass }           from "./passes/fusionPass";
 export { LayoutTransformPass }  from "./passes/layoutTransformPass";
 export { LoopLoweringPass }     from "./passes/loopLoweringPass";
-export { createDefaultPipeline } from "./passes/pipelines";
-export type { DefaultPipeline } from "./passes/pipelines";
+export { createDefaultPipeline, createLoopPipeline, createFullPipeline } from "./passes/pipelines";
+export type { DefaultPipeline, LoopPipelineOptions, FullPipeline } from "./passes/pipelines";
+export { LoopPassManager }    from "./passes/loopPass";
+export type { LoopPass, LoopPassResult, LoopPassManagerOptions } from "./passes/loopPass";
+export { LoopFusionPass, DEFAULT_LOOP_FUSION_CONFIG } from "./passes/loopFusionPass";
+export type { LoopFusionConfig } from "./passes/loopFusionPass";
+export { LoopTilingPass, DEFAULT_TILING_CONFIG } from "./passes/loopTilingPass";
+export type { TilingConfig } from "./passes/loopTilingPass";
+export { ConstantFoldingPass, resetCFCounter } from "./passes/constantFoldingPass";
+export { CSEPass }                             from "./passes/csePass";
+export { DeadCodeEliminationPass }             from "./passes/deadCodeEliminationPass";
 
 // ── Debug utilities ───────────────────────────────────────────────────────────
 export {
@@ -96,6 +127,10 @@ import { runLayoutCancellationExample }  from "./examples/layoutCancellation";
 import { runLayoutPropagationExample }   from "./examples/layoutPropagationExample";
 import { runLayoutMismatchExample }      from "./examples/layoutMismatch";
 import { runMixedPipelineExample }       from "./examples/mixedPipeline";
+import { runLoopFusionExample }          from "./examples/loopFusion";
+import { runLoopTilingExample }          from "./examples/loopTiling";
+import { runLoopOptimizationExample }    from "./examples/loopOptimization";
+import { runPreLayoutOptimizationExample } from "./examples/preLayoutOptimization";
 
 if (require.main === module) {
   console.log("\n╔══════════════════════════════════════════════════════════╗");
@@ -112,6 +147,14 @@ if (require.main === module) {
   runLayoutPropagationExample();
   runLayoutMismatchExample();
   runMixedPipelineExample();
+
+  console.log("\n── Loop IR optimization examples ───────────────────────────");
+  runLoopFusionExample();
+  runLoopTilingExample();
+  runLoopOptimizationExample();
+
+  console.log("\n── Pre-layout simplification examples ──────────────────────");
+  runPreLayoutOptimizationExample();
 
   console.log("\n  All examples complete.\n");
 }
