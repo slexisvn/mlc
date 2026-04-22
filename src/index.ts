@@ -109,6 +109,39 @@ export { ConstantFoldingPass, resetCFCounter } from "./passes/constantFoldingPas
 export { CSEPass }                             from "./passes/csePass";
 export { DeadCodeEliminationPass }             from "./passes/deadCodeEliminationPass";
 
+// ── Framework frontend ────────────────────────────────────────────────────────
+export { SymbolicTensor }          from "./framework/tensor";
+export { GraphBuilder }            from "./framework/graphBuilder";
+export type { GraphBuilderOptions } from "./framework/graphBuilder";
+export { ParameterStore, initXavier, initZeros, initOnes, initConstant } from "./framework/parameter";
+export type { ParameterSpec, Initialiser } from "./framework/parameter";
+export { Module, Linear, MLP }     from "./framework/module";
+export { ShapeError, OpError, GraphBuildError, AutodiffError, FrameworkError } from "./framework/errors";
+export type { FrameworkErrorKind } from "./framework/errors";
+export { broadcast, matmulShape, transposeShape, reshapeShape, reduceShape, shapeNumel, shapesEqual } from "./framework/shape";
+export type { ShapeExpr, Dim }     from "./framework/shape";
+export { OpSchemaRegistry, defaultOpRegistry, DEFAULT_OP_SCHEMAS } from "./framework/opRegistry";
+export type { OpSchema, InputSpec, OutputSpec, InferContext, GradBuilderFn } from "./framework/opRegistry";
+export * as ops                    from "./framework/ops";
+export { buildBackwardGraph, DEFAULT_GRAD_BUILDERS } from "./framework/autodiff";
+export type { BackwardResult }     from "./framework/autodiff";
+
+// ── Shared IR ─────────────────────────────────────────────────────────────────
+export type {
+  IRPackage, GraphIR, NodeIR, TensorIR, ParameterData, GraphSignature, GraphKind,
+  IRDType, IRShape, IRAttrs,
+} from "./shared-ir/schema";
+export { asTensorId, asNodeId, asGraphId } from "./shared-ir/ids";
+export type { TensorId, NodeId, GraphId }  from "./shared-ir/ids";
+export { validateIRPackage }               from "./shared-ir/validator";
+export type { IRValidationResult, IRValidationError, IRValidationErrorKind } from "./shared-ir/validator";
+export { serializeToJSON, deserializeFromJSON, DeserializationError } from "./shared-ir/serializer";
+export type { SerializeOptions }           from "./shared-ir/serializer";
+
+// ── Bridge ────────────────────────────────────────────────────────────────────
+export { importGraphIR, importSingleGraphIR, BridgeError } from "./bridge/importGraphIR";
+export type { ImportResult, ImportOptions }                from "./bridge/importGraphIR";
+
 // ── Debug utilities ───────────────────────────────────────────────────────────
 export {
   printGraph, printExecutionPlan, printDiff,
@@ -131,6 +164,7 @@ import { runLoopFusionExample }          from "./examples/loopFusion";
 import { runLoopTilingExample }          from "./examples/loopTiling";
 import { runLoopOptimizationExample }    from "./examples/loopOptimization";
 import { runPreLayoutOptimizationExample } from "./examples/preLayoutOptimization";
+import { runFrameworkDemo }                from "./examples/frameworkDemo";
 
 if (require.main === module) {
   console.log("\n╔══════════════════════════════════════════════════════════╗");
@@ -155,6 +189,9 @@ if (require.main === module) {
 
   console.log("\n── Pre-layout simplification examples ──────────────────────");
   runPreLayoutOptimizationExample();
+
+  console.log("\n── Mini DL framework examples ───────────────────────────────");
+  runFrameworkDemo();
 
   console.log("\n  All examples complete.\n");
 }
