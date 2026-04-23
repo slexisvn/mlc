@@ -1,0 +1,495 @@
+
+══════════════════════════════════════════════════════════════════
+  Phase A — Model definition (PyTorch-like API)
+══════════════════════════════════════════════════════════════════
+  ✓ Forward graph built — 9 nodes, 6 parameters
+
+══════════════════════════════════════════════════════════════════
+  Phase B — Forward IR validation
+══════════════════════════════════════════════════════════════════
+  ✓ Forward IRPackage is valid
+
+══════════════════════════════════════════════════════════════════
+  Phase C — Autodiff: build backward graph
+══════════════════════════════════════════════════════════════════
+  ✓ Backward graph built — 17 nodes, 4 parameter gradient(s)
+  Gradient map (fwd-param-id → bwd-grad-id):
+    fc1.weight (t5) → grad t25
+    fc1.bias (t6) → grad t19
+    fc2.weight (t11) → grad t21
+    fc2.bias (t12) → grad t17
+
+══════════════════════════════════════════════════════════════════
+  Phase D — Compiler optimisation: FORWARD graph
+══════════════════════════════════════════════════════════════════
+  ✓ forward compiler graph valid — 9 nodes
+
+──────────────────────────────────────────────────────────────
+  forward input graph
+  Graph : all_pass_model
+  Nodes : 9   Tensors : 17
+──────────────────────────────────────────────────────────────
+  ▸ Inputs:
+      [t0] x                  dtype=float32  shape=[32,128]
+      [t1] img_NHWC           dtype=float32  shape=[1,8,8,4]
+      [t2] cA                 dtype=float32  shape=[1]
+      [t3] cB                 dtype=float32  shape=[1]
+      [t4] fc1.weight         dtype=float32  shape=[128,64]
+      [t5] fc1.bias           dtype=float32  shape=[64]
+      [t6] fc2.weight         dtype=float32  shape=[64,32]
+      [t7] fc2.bias           dtype=float32  shape=[32]
+  ▸ Outputs:
+      [t8] y                  dtype=float32  shape=[1,4,4,4]
+      [t14] y                  dtype=float32  shape=[32,32]
+  ▸ Nodes (9):
+      [n0] pool2d            in=[img_NHWC(t1)]
+                              out=[y(t8)]  {kernelSize:2, stride:2}
+      [n1] matmul            in=[x(t0), fc1.weight(t4)]
+                              out=[y(t9)]
+      [n2] add               in=[y(t9), fc1.bias(t5)]
+                              out=[y(t10)]
+      [n3] matmul            in=[x(t0), fc1.weight(t4)]
+                              out=[y(t11)]
+      [n4] add               in=[y(t11), fc1.bias(t5)]
+                              out=[y(t12)]
+      [n5] matmul            in=[y(t12), fc2.weight(t6)]
+                              out=[y(t13)]
+      [n6] add               in=[y(t13), fc2.bias(t7)]
+                              out=[y(t14)]
+      [n7] add               in=[cA(t2), cB(t3)]
+                              out=[y(t15)]
+      [n8] relu              in=[y(t15)]
+                              out=[y(t16)]
+  ▸ Tensors (17):
+      [t0] x                  producer=<input>        dtype=float32
+      [t1] img_NHWC           producer=<input>        dtype=float32
+      [t10] y                  producer=n2             dtype=float32
+      [t11] y                  producer=n3             dtype=float32
+      [t12] y                  producer=n4             dtype=float32
+      [t13] y                  producer=n5             dtype=float32
+      [t14] y                  producer=n6             dtype=float32
+      [t15] y                  producer=n7             dtype=float32
+      [t16] y                  producer=n8             dtype=float32
+      [t2] cA                 producer=<input>        dtype=float32
+      [t3] cB                 producer=<input>        dtype=float32
+      [t4] fc1.weight         producer=<input>        dtype=float32
+      [t5] fc1.bias           producer=<input>        dtype=float32
+      [t6] fc2.weight         producer=<input>        dtype=float32
+      [t7] fc2.bias           producer=<input>        dtype=float32
+      [t8] y                  producer=n0             dtype=float32
+      [t9] y                  producer=n1             dtype=float32
+──────────────────────────────────────────────────────────────
+
+  [ConstantFoldingPass] · ──────────────────────────────────────────────────
+  [ConstantFoldingPass] · Running pass: ConstantFoldingPass
+  [ConstantFoldingPass] · CF: folded "n7" (op=add) → const "n_cf_0", output shape=[1]
+  [ConstantFoldingPass] · CF: folded "n8" (op=relu) → const "n_cf_1", output shape=[1]
+  [ConstantFoldingPass] · ConstantFoldingPass complete: 2 node(s) folded, 0 skipped.
+  [ConstantFoldingPass] · Graph modified by "ConstantFoldingPass"
+  [ConstantFoldingPass] · Graph valid after "ConstantFoldingPass" ✓
+  [CSEPass] · ──────────────────────────────────────────────────
+  [CSEPass] · Running pass: CSEPass
+  [CSEPass] · CSE: eliminated duplicate node "n3" (op=matmul) — using canonical "n1"
+  [CSEPass] · CSE: eliminated duplicate node "n4" (op=add) — using canonical "n2"
+  [CSEPass] · CSEPass complete: 2 duplicate node(s) eliminated.
+  [CSEPass] · Graph modified by "CSEPass"
+  [CSEPass] · Graph valid after "CSEPass" ✓
+  [DeadCodeEliminationPass] · ──────────────────────────────────────────────────
+  [DeadCodeEliminationPass] · Running pass: DeadCodeEliminationPass
+  [DeadCodeEliminationPass] · DCE: removed dead node "n_cf_0" (op=const)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n_cf_1" (op=const)
+  [DeadCodeEliminationPass] ⚠ DCE: graph input "t2" (cA) is unused.
+  [DeadCodeEliminationPass] ⚠ DCE: graph input "t3" (cB) is unused.
+  [DeadCodeEliminationPass] · DeadCodeEliminationPass complete: 2 node(s) removed, 2 tensor(s) removed.
+  [DeadCodeEliminationPass] · Graph modified by "DeadCodeEliminationPass"
+  [DeadCodeEliminationPass] · Graph valid after "DeadCodeEliminationPass" ✓
+  [LayoutInsertionPass] · ──────────────────────────────────────────────────
+  [LayoutInsertionPass] · Running pass: LayoutInsertionPass
+  [LayoutInsertionPass] · Found 1 layout conflict(s); attempting to insert transposes.
+  [LayoutInsertionPass] · Inserted NHWC→NCHW transpose ("ni_0") before op "pool2d" ("n0").
+  [LayoutInsertionPass] · Layout insertion complete: 1 transpose(s) added.
+  [LayoutInsertionPass] · Graph modified by "LayoutInsertionPass"
+  [LayoutInsertionPass] · Graph valid after "LayoutInsertionPass" ✓
+  [LayoutTransformPass] · ──────────────────────────────────────────────────
+  [LayoutTransformPass] · Running pass: LayoutTransformPass
+  [LayoutTransformPass] · Layout analysis: 0 elimination candidate(s), 0 conflict(s).
+  [LayoutTransformPass] · No layout chains matched — graph unchanged.
+  [LayoutTransformPass] · No changes in "LayoutTransformPass"
+  [LayoutTransformPass] · Graph valid after "LayoutTransformPass" ✓
+  [FusionPass] · ──────────────────────────────────────────────────
+  [FusionPass] · Running pass: FusionPass
+  [FusionPass] · Rejected ni_0(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n0(pool2d) [NoMatchingRule]: No fusion rule starts with op "pool2d".
+  [FusionPass] · Found 2 candidate chain(s) (2 rejected).
+  [FusionPass] · Fusing: [n1(matmul) → n2(add)] ⟹  n_fused_0(linear)
+  [FusionPass] ·   Inputs:  [t0, t4, t5]
+  [FusionPass] ·   Outputs: [t10] → [t_fused_0_0]
+  [FusionPass] · Fusing: [n5(matmul) → n6(add)] ⟹  n_fused_1(linear)
+  [FusionPass] ·   Inputs:  [t_fused_0_0, t6, t7]
+  [FusionPass] ·   Outputs: [t14] → [t_fused_1_0]
+  [FusionPass] · Graph modified by "FusionPass"
+  [FusionPass] · Graph valid after "FusionPass" ✓
+  [LoopLoweringPass] · ──────────────────────────────────────────────────
+  [LoopLoweringPass] · Running pass: LoopLoweringPass
+  [LoopLoweringPass] · Lowered 2 output(s) → 2 LoopFunction(s)
+  [LoopLoweringPass] · No changes in "LoopLoweringPass"
+  [LoopLoweringPass] · Graph valid after "LoopLoweringPass" ✓
+
+  ✓ forward pipeline complete. Passes run: 7
+
+──────────────────────────────────────────────────────────────
+  forward optimised graph
+  Graph : all_pass_model_opt_opt_opt_opt_opt
+  Nodes : 4   Tensors : 12
+──────────────────────────────────────────────────────────────
+  ▸ Inputs:
+      [t0] x                  dtype=float32  shape=[32,128]
+      [t1] img_NHWC           dtype=float32  shape=[1,8,8,4]
+      [t2] cA                 dtype=float32  shape=[1]
+      [t3] cB                 dtype=float32  shape=[1]
+      [t4] fc1.weight         dtype=float32  shape=[128,64]
+      [t5] fc1.bias           dtype=float32  shape=[64]
+      [t6] fc2.weight         dtype=float32  shape=[64,32]
+      [t7] fc2.bias           dtype=float32  shape=[32]
+  ▸ Outputs:
+      [t8] y                  dtype=float32  shape=[1,4,4,4]
+      [t_fused_1_0] linear_out         dtype=float32  shape=[32,32]
+  ▸ Nodes (4):
+      [ni_0] transpose         in=[img_NHWC(t1)]
+                                out=[img_NHWC_NCHW(ti_0)]  {perm:[0,3,1,2], fromLayout:"NHWC", toLayout:"NCHW"}
+      [n0] pool2d            in=[img_NHWC_NCHW(ti_0)]
+                              out=[y(t8)]  {kernelSize:2, stride:2}
+      [n_fused_0] linear            in=[x(t0), fc1.weight(t4), fc1.bias(t5)]
+                                     out=[linear_out(t_fused_0_0)]  {fusedFrom:[t10]}
+      [n_fused_1] linear            in=[linear_out(t_fused_0_0), fc2.weight(t6), fc2.bias(t7)]
+                                     out=[linear_out(t_fused_1_0)]  {fusedFrom:[t14]}
+  ▸ Tensors (12):
+      [t_fused_0_0] linear_out         producer=n_fused_0      dtype=float32
+      [t_fused_1_0] linear_out         producer=n_fused_1      dtype=float32
+      [t0] x                  producer=<input>        dtype=float32
+      [t1] img_NHWC           producer=<input>        dtype=float32
+      [t2] cA                 producer=<input>        dtype=float32
+      [t3] cB                 producer=<input>        dtype=float32
+      [t4] fc1.weight         producer=<input>        dtype=float32
+      [t5] fc1.bias           producer=<input>        dtype=float32
+      [t6] fc2.weight         producer=<input>        dtype=float32
+      [t7] fc2.bias           producer=<input>        dtype=float32
+      [t8] y                  producer=n0             dtype=float32
+      [ti_0] img_NHWC_NCHW      producer=ni_0           dtype=float32
+──────────────────────────────────────────────────────────────
+
+
+······························································
+  Diff after forward full pipeline diff
+······························································
+  Nodes  : 9 → 4  (-5 ✓)
+  Tensors: 17    → 12     (-5 ✓)
+  Removed: n1(matmul), n2(add), n3(matmul), n4(add), n5(matmul), n6(add), n7(add), n8(relu)
+  Added  : ni_0(transpose), n_fused_0(linear), n_fused_1(linear)
+······························································
+
+
+──────────────────────────────────────────────────────────────
+  Loop IR — forward
+  Loop IR Module : all_pass_model_opt_opt_opt_opt_opt  (2 functions)
+──────────────────────────────────────────────────────────────
+  ▸ fn compute_y_t8  [in: img_NHWC(1×8×8×4)]  [out: y(1×4×4×4)]  [temps: img_NHWC_NCHW(1×4×8×8)]
+    for i0 in [0, 1):
+      for i1 in [0, 4):
+        for i2 in [0, 8):
+          for i3 in [0, 8):
+            img_NHWC_NCHW[i0, i1, i2, i3] = img_NHWC[i0, i2, i3, i1]
+    for n in [0, 1):
+      for c in [0, 4):
+        for oi in [0, 4):
+          for oj in [0, 4):
+            y[n, c, oi, oj] = -Inf()
+            for ki in [0, 2):
+              for kj in [0, 2):
+                y[n, c, oi, oj] = max(y[n, c, oi, oj], img_NHWC_NCHW[n, c, ((2.0 * oi) + ki), ((2.0 * oj) + kj)])
+······························································
+  ▸ fn compute_linear_out_t_fused_1_0  [in: x(32×128), fc1.weight(128×64), fc1.bias(64), fc2.weight(64×32), fc2.bias(32)]  [out: linear_out(32×32)]  [temps: linear_out(32×64)]
+    for i in [0, 32):
+      for j in [0, 64):
+        linear_out[i, j] = fc1.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (x[i, k] * fc1.weight[k, j])
+    for i in [0, 32):
+      for j in [0, 32):
+        linear_out[i, j] = fc2.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (linear_out[i, k] * fc2.weight[k, j])
+······························································
+──────────────────────────────────────────────────────────────
+
+══════════════════════════════════════════════════════════════════
+  Phase E — Compiler optimisation: BACKWARD graph
+══════════════════════════════════════════════════════════════════
+  ✓ backward compiler graph valid — 17 nodes
+
+──────────────────────────────────────────────────────────────
+  backward input graph
+  Graph : backward
+  Nodes : 17   Tensors : 26
+──────────────────────────────────────────────────────────────
+  ▸ Inputs:
+      [t17] x                  dtype=float32  shape=[32,128]
+      [t18] img_NHWC           dtype=float32  shape=[1,8,8,4]
+      [t19] cA                 dtype=float32  shape=[1]
+      [t20] cB                 dtype=float32  shape=[1]
+      [t21] fc1.weight         dtype=float32  shape=[128,64]
+      [t22] fc1.bias           dtype=float32  shape=[64]
+      [t23] fc2.weight         dtype=float32  shape=[64,32]
+      [t24] fc2.bias           dtype=float32  shape=[32]
+      [t25] grad_y             dtype=float32  shape=[32,32]
+  ▸ Outputs:
+      [t42] y                  dtype=float32  shape=[128,64]
+      [t36] y                  dtype=float32  shape=[32,64]
+      [t38] y                  dtype=float32  shape=[64,32]
+      [t25] grad_y             dtype=float32  shape=[32,32]
+  ▸ Nodes (17):
+      [n9] pool2d            in=[img_NHWC(t18)]
+                              out=[y(t26)]  {kernelSize:2, stride:2}
+      [n10] matmul            in=[x(t17), fc1.weight(t21)]
+                               out=[y(t27)]
+      [n11] add               in=[y(t27), fc1.bias(t22)]
+                               out=[y(t28)]
+      [n12] matmul            in=[x(t17), fc1.weight(t21)]
+                               out=[y(t29)]
+      [n13] add               in=[y(t29), fc1.bias(t22)]
+                               out=[y(t30)]
+      [n14] matmul            in=[y(t30), fc2.weight(t23)]
+                               out=[y(t31)]
+      [n15] add               in=[y(t31), fc2.bias(t24)]
+                               out=[y(t32)]
+      [n16] add               in=[cA(t19), cB(t20)]
+                               out=[y(t33)]
+      [n17] relu              in=[y(t33)]
+                               out=[y(t34)]
+      [n18] transpose         in=[fc2.weight(t23)]
+                               out=[y(t35)]
+      [n19] matmul            in=[grad_y(t25), y(t35)]
+                               out=[y(t36)]
+      [n20] transpose         in=[y(t30)]
+                               out=[y(t37)]
+      [n21] matmul            in=[y(t37), grad_y(t25)]
+                               out=[y(t38)]
+      [n22] transpose         in=[fc1.weight(t21)]
+                               out=[y(t39)]
+      [n23] matmul            in=[y(t36), y(t39)]
+                               out=[y(t40)]
+      [n24] transpose         in=[x(t17)]
+                               out=[y(t41)]
+      [n25] matmul            in=[y(t41), y(t36)]
+                               out=[y(t42)]
+  ▸ Tensors (26):
+      [t17] x                  producer=<input>        dtype=float32
+      [t18] img_NHWC           producer=<input>        dtype=float32
+      [t19] cA                 producer=<input>        dtype=float32
+      [t20] cB                 producer=<input>        dtype=float32
+      [t21] fc1.weight         producer=<input>        dtype=float32
+      [t22] fc1.bias           producer=<input>        dtype=float32
+      [t23] fc2.weight         producer=<input>        dtype=float32
+      [t24] fc2.bias           producer=<input>        dtype=float32
+      [t25] grad_y             producer=<input>        dtype=float32
+      [t26] y                  producer=n9             dtype=float32
+      [t27] y                  producer=n10            dtype=float32
+      [t28] y                  producer=n11            dtype=float32
+      [t29] y                  producer=n12            dtype=float32
+      [t30] y                  producer=n13            dtype=float32
+      [t31] y                  producer=n14            dtype=float32
+      [t32] y                  producer=n15            dtype=float32
+      [t33] y                  producer=n16            dtype=float32
+      [t34] y                  producer=n17            dtype=float32
+      [t35] y                  producer=n18            dtype=float32
+      [t36] y                  producer=n19            dtype=float32
+      [t37] y                  producer=n20            dtype=float32
+      [t38] y                  producer=n21            dtype=float32
+      [t39] y                  producer=n22            dtype=float32
+      [t40] y                  producer=n23            dtype=float32
+      [t41] y                  producer=n24            dtype=float32
+      [t42] y                  producer=n25            dtype=float32
+──────────────────────────────────────────────────────────────
+
+  [ConstantFoldingPass] · ──────────────────────────────────────────────────
+  [ConstantFoldingPass] · Running pass: ConstantFoldingPass
+  [ConstantFoldingPass] · CF: folded "n16" (op=add) → const "n_cf_2", output shape=[1]
+  [ConstantFoldingPass] · CF: folded "n17" (op=relu) → const "n_cf_3", output shape=[1]
+  [ConstantFoldingPass] · ConstantFoldingPass complete: 2 node(s) folded, 0 skipped.
+  [ConstantFoldingPass] · Graph modified by "ConstantFoldingPass"
+  [ConstantFoldingPass] · Graph valid after "ConstantFoldingPass" ✓
+  [CSEPass] · ──────────────────────────────────────────────────
+  [CSEPass] · Running pass: CSEPass
+  [CSEPass] · CSE: eliminated duplicate node "n12" (op=matmul) — using canonical "n10"
+  [CSEPass] · CSE: eliminated duplicate node "n13" (op=add) — using canonical "n11"
+  [CSEPass] · CSEPass complete: 2 duplicate node(s) eliminated.
+  [CSEPass] · Graph modified by "CSEPass"
+  [CSEPass] · Graph valid after "CSEPass" ✓
+  [DeadCodeEliminationPass] · ──────────────────────────────────────────────────
+  [DeadCodeEliminationPass] · Running pass: DeadCodeEliminationPass
+  [DeadCodeEliminationPass] · DCE: removed dead node "n9" (op=pool2d)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n14" (op=matmul)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n15" (op=add)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n22" (op=transpose)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n23" (op=matmul)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n_cf_2" (op=const)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n_cf_3" (op=const)
+  [DeadCodeEliminationPass] ⚠ DCE: graph input "t18" (img_NHWC) is unused.
+  [DeadCodeEliminationPass] ⚠ DCE: graph input "t19" (cA) is unused.
+  [DeadCodeEliminationPass] ⚠ DCE: graph input "t20" (cB) is unused.
+  [DeadCodeEliminationPass] ⚠ DCE: graph input "t24" (fc2.bias) is unused.
+  [DeadCodeEliminationPass] · DeadCodeEliminationPass complete: 7 node(s) removed, 7 tensor(s) removed.
+  [DeadCodeEliminationPass] · Graph modified by "DeadCodeEliminationPass"
+  [DeadCodeEliminationPass] · Graph valid after "DeadCodeEliminationPass" ✓
+  [LayoutInsertionPass] · ──────────────────────────────────────────────────
+  [LayoutInsertionPass] · Running pass: LayoutInsertionPass
+  [LayoutInsertionPass] · No layout conflicts — no transposes inserted.
+  [LayoutInsertionPass] · No changes in "LayoutInsertionPass"
+  [LayoutInsertionPass] · Graph valid after "LayoutInsertionPass" ✓
+  [LayoutTransformPass] · ──────────────────────────────────────────────────
+  [LayoutTransformPass] · Running pass: LayoutTransformPass
+  [LayoutTransformPass] · Layout analysis: 0 elimination candidate(s), 0 conflict(s).
+  [LayoutTransformPass] · No layout chains matched — graph unchanged.
+  [LayoutTransformPass] · No changes in "LayoutTransformPass"
+  [LayoutTransformPass] · Graph valid after "LayoutTransformPass" ✓
+  [FusionPass] · ──────────────────────────────────────────────────
+  [FusionPass] · Running pass: FusionPass
+  [FusionPass] · Rejected n18(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n19(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t36" produced by "n19" (matmul) is a graph output and cannot be an internal chain edge.
+  [FusionPass] · Rejected n20(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n21(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t38" produced by "n21" (matmul) is a graph output and cannot be an internal chain edge.
+  [FusionPass] · Rejected n24(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n25(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t42" produced by "n25" (matmul) is a graph output and cannot be an internal chain edge.
+  [FusionPass] · Found 1 candidate chain(s) (6 rejected).
+  [FusionPass] · Fusing: [n10(matmul) → n11(add)] ⟹  n_fused_2(linear)
+  [FusionPass] ·   Inputs:  [t17, t21, t22]
+  [FusionPass] ·   Outputs: [t28] → [t_fused_2_0]
+  [FusionPass] · Graph modified by "FusionPass"
+  [FusionPass] · Graph valid after "FusionPass" ✓
+  [LoopLoweringPass] · ──────────────────────────────────────────────────
+  [LoopLoweringPass] · Running pass: LoopLoweringPass
+  [LoopLoweringPass] · Lowered 4 output(s) → 4 LoopFunction(s)
+  [LoopLoweringPass] · No changes in "LoopLoweringPass"
+  [LoopLoweringPass] · Graph valid after "LoopLoweringPass" ✓
+
+  ✓ backward pipeline complete. Passes run: 7
+
+──────────────────────────────────────────────────────────────
+  backward optimised graph
+  Graph : backward_opt_opt_opt_opt
+  Nodes : 7   Tensors : 16
+──────────────────────────────────────────────────────────────
+  ▸ Inputs:
+      [t17] x                  dtype=float32  shape=[32,128]
+      [t18] img_NHWC           dtype=float32  shape=[1,8,8,4]
+      [t19] cA                 dtype=float32  shape=[1]
+      [t20] cB                 dtype=float32  shape=[1]
+      [t21] fc1.weight         dtype=float32  shape=[128,64]
+      [t22] fc1.bias           dtype=float32  shape=[64]
+      [t23] fc2.weight         dtype=float32  shape=[64,32]
+      [t24] fc2.bias           dtype=float32  shape=[32]
+      [t25] grad_y             dtype=float32  shape=[32,32]
+  ▸ Outputs:
+      [t42] y                  dtype=float32  shape=[128,64]
+      [t36] y                  dtype=float32  shape=[32,64]
+      [t38] y                  dtype=float32  shape=[64,32]
+      [t25] grad_y             dtype=float32  shape=[32,32]
+  ▸ Nodes (7):
+      [n_fused_2] linear            in=[x(t17), fc1.weight(t21), fc1.bias(t22)]
+                                     out=[linear_out(t_fused_2_0)]  {fusedFrom:[t28]}
+      [n18] transpose         in=[fc2.weight(t23)]
+                               out=[y(t35)]
+      [n19] matmul            in=[grad_y(t25), y(t35)]
+                               out=[y(t36)]
+      [n20] transpose         in=[linear_out(t_fused_2_0)]
+                               out=[y(t37)]
+      [n21] matmul            in=[y(t37), grad_y(t25)]
+                               out=[y(t38)]
+      [n24] transpose         in=[x(t17)]
+                               out=[y(t41)]
+      [n25] matmul            in=[y(t41), y(t36)]
+                               out=[y(t42)]
+  ▸ Tensors (16):
+      [t_fused_2_0] linear_out         producer=n_fused_2      dtype=float32
+      [t17] x                  producer=<input>        dtype=float32
+      [t18] img_NHWC           producer=<input>        dtype=float32
+      [t19] cA                 producer=<input>        dtype=float32
+      [t20] cB                 producer=<input>        dtype=float32
+      [t21] fc1.weight         producer=<input>        dtype=float32
+      [t22] fc1.bias           producer=<input>        dtype=float32
+      [t23] fc2.weight         producer=<input>        dtype=float32
+      [t24] fc2.bias           producer=<input>        dtype=float32
+      [t25] grad_y             producer=<input>        dtype=float32
+      [t35] y                  producer=n18            dtype=float32
+      [t36] y                  producer=n19            dtype=float32
+      [t37] y                  producer=n20            dtype=float32
+      [t38] y                  producer=n21            dtype=float32
+      [t41] y                  producer=n24            dtype=float32
+      [t42] y                  producer=n25            dtype=float32
+──────────────────────────────────────────────────────────────
+
+
+······························································
+  Diff after backward full pipeline diff
+······························································
+  Nodes  : 17 → 7  (-10 ✓)
+  Tensors: 26    → 16     (-10 ✓)
+  Removed: n9(pool2d), n10(matmul), n11(add), n12(matmul), n13(add), n14(matmul), n15(add), n16(add), n17(relu), n22(transpose), n23(matmul)
+  Added  : n_fused_2(linear)
+······························································
+
+
+──────────────────────────────────────────────────────────────
+  Loop IR — backward
+  Loop IR Module : backward_opt_opt_opt_opt  (4 functions)
+──────────────────────────────────────────────────────────────
+  ▸ fn compute_y_t42  [in: fc2.weight(64×32), grad_y(32×32), x(32×128)]  [out: y(128×64)]  [temps: y(32×64), y(32×64), y(128×32)]
+    for i0 in [0, 32):
+      for i1 in [0, 64):
+        y[i0, i1] = fc2.weight[i1, i0]
+    for i in [0, 32):
+      for j in [0, 64):
+        y[i, j] = 0.0
+        for k in [0, 32):
+          y[i, j] += (grad_y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = x[i1, i0]
+    for i in [0, 128):
+      for j in [0, 64):
+        y[i, j] = 0.0
+        for k in [0, 32):
+          y[i, j] += (y[i, k] * y[k, j])
+······························································
+  ▸ fn compute_y_t36  [in: fc2.weight(64×32), grad_y(32×32)]  [out: y(32×64)]  [temps: y(32×64)]
+    for i0 in [0, 32):
+      for i1 in [0, 64):
+        y[i0, i1] = fc2.weight[i1, i0]
+    for i in [0, 32):
+      for j in [0, 64):
+        y[i, j] = 0.0
+        for k in [0, 32):
+          y[i, j] += (grad_y[i, k] * y[k, j])
+······························································
+  ▸ fn compute_y_t38  [in: x(32×128), fc1.weight(128×64), fc1.bias(64), grad_y(32×32)]  [out: y(64×32)]  [temps: linear_out(32×64), y(64×32)]
+    for i in [0, 32):
+      for j in [0, 64):
+        linear_out[i, j] = fc1.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (x[i, k] * fc1.weight[k, j])
+    for i0 in [0, 64):
+      for i1 in [0, 32):
+        y[i0, i1] = linear_out[i1, i0]
+    for i in [0, 64):
+      for j in [0, 32):
+        y[i, j] = 0.0
+        for k in [0, 32):
+          y[i, j] += (y[i, k] * grad_y[k, j])
+······························································
+  ▸ fn compute_grad_y_t25  [in: —]  [out: grad_y(32×32)]
+    (empty body)
+······························································
+──────────────────────────────────────────────────────────────
+
+  Demo complete.
+
