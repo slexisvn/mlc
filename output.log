@@ -2,345 +2,170 @@
 ══════════════════════════════════════════════════════════════════
   Phase A — Model definition (PyTorch-like API)
 ══════════════════════════════════════════════════════════════════
-  ✓ Forward graph built — 8 nodes, 6 parameters
 
 ══════════════════════════════════════════════════════════════════
-  Phase B — Forward IR validation
+  Phase B — Trigger execution (JIT Trace & Compile)
 ══════════════════════════════════════════════════════════════════
-  ✓ Forward IRPackage is valid
+  Instantiating an eager input tensor...
+  Executing model.forward(x)...
+  ✓ Backward graph built — 87 nodes, 10 gradient(s)
 
 ══════════════════════════════════════════════════════════════════
-  Phase C — Autodiff: build backward graph
+  Phase — Compiler optimisation: FORWARD graph
 ══════════════════════════════════════════════════════════════════
-  ✓ Backward graph built — 30 nodes, 6 parameter gradient(s)
-  Gradient map (fwd-param-id → bwd-grad-id):
-    fc1.weight (t1) → grad t37
-    fc1.bias (t2) → grad t33
-    fc2.weight (t6) → grad t29
-    fc2.bias (t7) → grad t25
-    fc3.weight (t11) → grad t21
-    fc3.bias (t12) → grad t17
-
-══════════════════════════════════════════════════════════════════
-  Phase D — Compiler optimisation: FORWARD graph
-══════════════════════════════════════════════════════════════════
-  ✓ forward compiler graph valid — 8 nodes
+  ✓ forward compiler graph valid — 27 nodes
 
 ──────────────────────────────────────────────────────────────
   forward input graph
-  Graph : mlp_classifier
-  Nodes : 8   Tensors : 15
+  Graph : classifier
+  Nodes : 27   Tensors : 45
 ──────────────────────────────────────────────────────────────
   ▸ Inputs:
-      [t0] x                  dtype=float32  shape=[32,128]
+      [t0] inp_0              dtype=float32  shape=[128,128]
       [t1] fc1.weight         dtype=float32  shape=[128,256]
       [t2] fc1.bias           dtype=float32  shape=[256]
-      [t3] fc2.weight         dtype=float32  shape=[256,128]
-      [t4] fc2.bias           dtype=float32  shape=[128]
-      [t5] fc3.weight         dtype=float32  shape=[128,32]
-      [t6] fc3.bias           dtype=float32  shape=[32]
+      [t3] fc2.weight         dtype=float32  shape=[256,256]
+      [t4] fc2.bias           dtype=float32  shape=[256]
+      [t5] const_dqk3         dtype=float32  shape=[]
+      [t6] const_wxho         dtype=float32  shape=[]
+      [t7] const_84sq         dtype=float32  shape=[]
+      [t8] const_k7n1         dtype=float32  shape=[]
+      [t9] const_s8bm         dtype=float32  shape=[]
+      [t10] const_2pm6         dtype=float32  shape=[]
+      [t11] const_qiid         dtype=float32  shape=[]
+      [t12] fc3.weight         dtype=float32  shape=[256,128]
+      [t13] fc3.bias           dtype=float32  shape=[128]
+      [t14] fc4.weight         dtype=float32  shape=[128,64]
+      [t15] fc4.bias           dtype=float32  shape=[64]
+      [t16] fc5.weight         dtype=float32  shape=[64,32]
+      [t17] fc5.bias           dtype=float32  shape=[32]
   ▸ Outputs:
-      [t14] y                  dtype=float32  shape=[32,32]
-  ▸ Nodes (8):
-      [n0] matmul            in=[x(t0), fc1.weight(t1)]
-                              out=[y(t7)]
-      [n1] add               in=[y(t7), fc1.bias(t2)]
-                              out=[y(t8)]
-      [n2] relu              in=[y(t8)]
-                              out=[y(t9)]
-      [n3] matmul            in=[y(t9), fc2.weight(t3)]
-                              out=[y(t10)]
-      [n4] add               in=[y(t10), fc2.bias(t4)]
-                              out=[y(t11)]
-      [n5] relu              in=[y(t11)]
-                              out=[y(t12)]
-      [n6] matmul            in=[y(t12), fc3.weight(t5)]
-                              out=[y(t13)]
-      [n7] add               in=[y(t13), fc3.bias(t6)]
-                              out=[y(t14)]
-  ▸ Tensors (15):
-      [t0] x                  producer=<input>        dtype=float32
-      [t1] fc1.weight         producer=<input>        dtype=float32
-      [t10] y                  producer=n3             dtype=float32
-      [t11] y                  producer=n4             dtype=float32
-      [t12] y                  producer=n5             dtype=float32
-      [t13] y                  producer=n6             dtype=float32
-      [t14] y                  producer=n7             dtype=float32
-      [t2] fc1.bias           producer=<input>        dtype=float32
-      [t3] fc2.weight         producer=<input>        dtype=float32
-      [t4] fc2.bias           producer=<input>        dtype=float32
-      [t5] fc3.weight         producer=<input>        dtype=float32
-      [t6] fc3.bias           producer=<input>        dtype=float32
-      [t7] y                  producer=n0             dtype=float32
-      [t8] y                  producer=n1             dtype=float32
-      [t9] y                  producer=n2             dtype=float32
-──────────────────────────────────────────────────────────────
-
-  [ConstantFoldingPass] · ──────────────────────────────────────────────────
-  [ConstantFoldingPass] · Running pass: ConstantFoldingPass
-  [ConstantFoldingPass] · ConstantFoldingPass complete: 0 node(s) folded, 0 skipped.
-  [ConstantFoldingPass] · No changes in "ConstantFoldingPass"
-  [ConstantFoldingPass] · Graph valid after "ConstantFoldingPass" ✓
-  [CSEPass] · ──────────────────────────────────────────────────
-  [CSEPass] · Running pass: CSEPass
-  [CSEPass] · CSEPass complete: 0 duplicate node(s) eliminated.
-  [CSEPass] · No changes in "CSEPass"
-  [CSEPass] · Graph valid after "CSEPass" ✓
-  [DeadCodeEliminationPass] · ──────────────────────────────────────────────────
-  [DeadCodeEliminationPass] · Running pass: DeadCodeEliminationPass
-  [DeadCodeEliminationPass] · DeadCodeEliminationPass complete: 0 node(s) removed, 0 tensor(s) removed, 0 unused input(s) removed.
-  [DeadCodeEliminationPass] · No changes in "DeadCodeEliminationPass"
-  [DeadCodeEliminationPass] · Graph valid after "DeadCodeEliminationPass" ✓
-  [LayoutInsertionPass] · ──────────────────────────────────────────────────
-  [LayoutInsertionPass] · Running pass: LayoutInsertionPass
-  [LayoutInsertionPass] · No layout conflicts — no transposes inserted.
-  [LayoutInsertionPass] · No changes in "LayoutInsertionPass"
-  [LayoutInsertionPass] · Graph valid after "LayoutInsertionPass" ✓
-  [LayoutTransformPass] · ──────────────────────────────────────────────────
-  [LayoutTransformPass] · Running pass: LayoutTransformPass
-  [LayoutTransformPass] · Layout analysis: 0 elimination candidate(s), 0 conflict(s).
-  [LayoutTransformPass] · No layout chains matched — graph unchanged.
-  [LayoutTransformPass] · No changes in "LayoutTransformPass"
-  [LayoutTransformPass] · Graph valid after "LayoutTransformPass" ✓
-  [FusionPass] · ──────────────────────────────────────────────────
-  [FusionPass] · Running pass: FusionPass
-  [FusionPass] · Found 3 candidate chain(s) (0 rejected).
-  [FusionPass] · Fusing: [n0(matmul) → n1(add) → n2(relu)] ⟹  n_fused_0(linear_relu)
-  [FusionPass] ·   Inputs:  [t0, t1, t2]
-  [FusionPass] ·   Outputs: [t9] → [t_fused_0_0]
-  [FusionPass] · Fusing: [n3(matmul) → n4(add) → n5(relu)] ⟹  n_fused_1(linear_relu)
-  [FusionPass] ·   Inputs:  [t_fused_0_0, t3, t4]
-  [FusionPass] ·   Outputs: [t12] → [t_fused_1_0]
-  [FusionPass] · Fusing: [n6(matmul) → n7(add)] ⟹  n_fused_2(linear)
-  [FusionPass] ·   Inputs:  [t_fused_1_0, t5, t6]
-  [FusionPass] ·   Outputs: [t14] → [t_fused_2_0]
-  [FusionPass] · Graph modified by "FusionPass"
-  [FusionPass] · Graph valid after "FusionPass" ✓
-  [LoopLoweringPass] · ──────────────────────────────────────────────────
-  [LoopLoweringPass] · Running pass: LoopLoweringPass
-  [LoopLoweringPass] · Lowered 1 output(s) → 1 LoopFunction(s)
-  [LoopLoweringPass] · No changes in "LoopLoweringPass"
-  [LoopLoweringPass] · Graph valid after "LoopLoweringPass" ✓
-
-  ✓ forward pipeline complete. Passes run: 7
-
-──────────────────────────────────────────────────────────────
-  forward optimised graph
-  Graph : mlp_classifier_opt
-  Nodes : 3   Tensors : 10
-──────────────────────────────────────────────────────────────
-  ▸ Inputs:
-      [t0] x                  dtype=float32  shape=[32,128]
-      [t1] fc1.weight         dtype=float32  shape=[128,256]
-      [t2] fc1.bias           dtype=float32  shape=[256]
-      [t3] fc2.weight         dtype=float32  shape=[256,128]
-      [t4] fc2.bias           dtype=float32  shape=[128]
-      [t5] fc3.weight         dtype=float32  shape=[128,32]
-      [t6] fc3.bias           dtype=float32  shape=[32]
-  ▸ Outputs:
-      [t_fused_2_0] linear_out         dtype=float32  shape=[32,32]
-  ▸ Nodes (3):
-      [n_fused_0] linear_relu       in=[x(t0), fc1.weight(t1), fc1.bias(t2)]
-                                     out=[linear_relu_out(t_fused_0_0)]  {fusedFrom:[t9]}
-      [n_fused_1] linear_relu       in=[linear_relu_out(t_fused_0_0), fc2.weight(t3), fc2.bias(t4)]
-                                     out=[linear_relu_out(t_fused_1_0)]  {fusedFrom:[t12]}
-      [n_fused_2] linear            in=[linear_relu_out(t_fused_1_0), fc3.weight(t5), fc3.bias(t6)]
-                                     out=[linear_out(t_fused_2_0)]  {fusedFrom:[t14]}
-  ▸ Tensors (10):
-      [t_fused_0_0] linear_relu_out    producer=n_fused_0      dtype=float32
-      [t_fused_1_0] linear_relu_out    producer=n_fused_1      dtype=float32
-      [t_fused_2_0] linear_out         producer=n_fused_2      dtype=float32
-      [t0] x                  producer=<input>        dtype=float32
-      [t1] fc1.weight         producer=<input>        dtype=float32
-      [t2] fc1.bias           producer=<input>        dtype=float32
-      [t3] fc2.weight         producer=<input>        dtype=float32
-      [t4] fc2.bias           producer=<input>        dtype=float32
-      [t5] fc3.weight         producer=<input>        dtype=float32
-      [t6] fc3.bias           producer=<input>        dtype=float32
-──────────────────────────────────────────────────────────────
-
-
-······························································
-  Diff after forward full pipeline diff
-······························································
-  Nodes  : 8 → 3  (-5 ✓)
-  Tensors: 15    → 10     (-5 ✓)
-  Removed: n0(matmul), n1(add), n2(relu), n3(matmul), n4(add), n5(relu), n6(matmul), n7(add)
-  Added  : n_fused_0(linear_relu), n_fused_1(linear_relu), n_fused_2(linear)
-······························································
-
-
-──────────────────────────────────────────────────────────────
-  Loop IR — forward
-  Loop IR Module : mlp_classifier_opt  (1 function)
-──────────────────────────────────────────────────────────────
-  ▸ fn compute_linear_out_t_fused_2_0  [in: x(32×128), fc1.weight(128×256), fc1.bias(256), fc2.weight(256×128), fc2.bias(128), fc3.weight(128×32), fc3.bias(32)]  [out: linear_out(32×32)]  [temps: linear_relu_out(32×256), linear_relu_out(32×128)]
-    for i in [0, 32):
-      for j in [0, 256):
-        linear_relu_out[i, j] = fc1.bias[j]
-        for k in [0, 128):
-          linear_relu_out[i, j] += (x[i, k] * fc1.weight[k, j])
-        linear_relu_out[i, j] = max(0.0, linear_relu_out[i, j])
-    for i in [0, 32):
-      for j in [0, 128):
-        linear_relu_out[i, j] = fc2.bias[j]
-        for k in [0, 256):
-          linear_relu_out[i, j] += (linear_relu_out[i, k] * fc2.weight[k, j])
-        linear_relu_out[i, j] = max(0.0, linear_relu_out[i, j])
-    for i in [0, 32):
-      for j in [0, 32):
-        linear_out[i, j] = fc3.bias[j]
-        for k in [0, 128):
-          linear_out[i, j] += (linear_relu_out[i, k] * fc3.weight[k, j])
-······························································
-──────────────────────────────────────────────────────────────
-
-══════════════════════════════════════════════════════════════════
-  Phase E — Compiler optimisation: BACKWARD graph
-══════════════════════════════════════════════════════════════════
-  ✓ backward compiler graph valid — 30 nodes
-
-──────────────────────────────────────────────────────────────
-  backward input graph
-  Graph : backward
-  Nodes : 30   Tensors : 38
-──────────────────────────────────────────────────────────────
-  ▸ Inputs:
-      [t15] x                  dtype=float32  shape=[32,128]
-      [t16] fc1.weight         dtype=float32  shape=[128,256]
-      [t17] fc1.bias           dtype=float32  shape=[256]
-      [t18] fc2.weight         dtype=float32  shape=[256,128]
-      [t19] fc2.bias           dtype=float32  shape=[128]
-      [t20] fc3.weight         dtype=float32  shape=[128,32]
-      [t21] fc3.bias           dtype=float32  shape=[32]
-      [t22] grad_y             dtype=float32  shape=[32,32]
-  ▸ Outputs:
-      [t52] y                  dtype=float32  shape=[128,256]
-      [t48] y                  dtype=float32  shape=[256]
-      [t44] y                  dtype=float32  shape=[256,128]
-      [t40] y                  dtype=float32  shape=[128]
-      [t36] y                  dtype=float32  shape=[128,32]
-      [t32] y                  dtype=float32  shape=[32]
-  ▸ Nodes (30):
-      [n8] matmul            in=[x(t15), fc1.weight(t16)]
+      [t44] y                  dtype=float32  shape=[128,32]
+  ▸ Nodes (27):
+      [n0] matmul            in=[inp_0(t0), fc1.weight(t1)]
+                              out=[y(t18)]
+      [n1] add               in=[y(t18), fc1.bias(t2)]
+                              out=[y(t19)]
+      [n2] relu              in=[y(t19)]
+                              out=[y(t20)]
+      [n3] matmul            in=[inp_0(t0), fc1.weight(t1)]
+                              out=[y(t21)]
+      [n4] add               in=[y(t21), fc1.bias(t2)]
+                              out=[y(t22)]
+      [n5] matmul            in=[y(t22), fc2.weight(t3)]
                               out=[y(t23)]
-      [n9] add               in=[y(t23), fc1.bias(t17)]
+      [n6] add               in=[y(t23), fc2.bias(t4)]
                               out=[y(t24)]
-      [n10] relu              in=[y(t24)]
-                               out=[y(t25)]
-      [n11] matmul            in=[y(t25), fc2.weight(t18)]
-                               out=[y(t26)]
-      [n12] add               in=[y(t26), fc2.bias(t19)]
-                               out=[y(t27)]
-      [n13] relu              in=[y(t27)]
+      [n7] mul               in=[y(t24), const_dqk3(t5)]
+                              out=[y(t25)]
+      [n8] add               in=[const_wxho(t6), const_84sq(t7)]
+                              out=[y(t26)]
+      [n9] matmul            in=[y(t20), fc2.weight(t3)]
+                              out=[y(t27)]
+      [n10] add               in=[y(t27), fc2.bias(t4)]
                                out=[y(t28)]
-      [n14] matmul            in=[y(t28), fc3.weight(t20)]
+      [n11] relu              in=[y(t28)]
                                out=[y(t29)]
-      [n15] add               in=[y(t29), fc3.bias(t21)]
+      [n12] mul               in=[y(t29), y(t26)]
                                out=[y(t30)]
-      [n16] sum               in=[grad_y(t22)]
-                               out=[y(t31)]  {axes:[0], keepDims:true}
-      [n17] reshape           in=[y(t31)]
-                               out=[y(t32)]  {shape:[32]}
-      [n18] transpose         in=[fc3.weight(t20)]
+      [n13] sub               in=[y(t30), const_k7n1(t8)]
+                               out=[y(t31)]
+      [n14] sub               in=[y(t30), const_s8bm(t9)]
+                               out=[y(t32)]
+      [n15] add               in=[y(t31), y(t32)]
                                out=[y(t33)]
-      [n19] matmul            in=[grad_y(t22), y(t33)]
+      [n16] add               in=[y(t33), const_2pm6(t10)]
                                out=[y(t34)]
-      [n20] transpose         in=[y(t28)]
+      [n17] mul               in=[y(t34), const_qiid(t11)]
                                out=[y(t35)]
-      [n21] matmul            in=[y(t35), grad_y(t22)]
+      [n18] matmul            in=[y(t35), fc3.weight(t12)]
                                out=[y(t36)]
-      [n22] step              in=[y(t27)]
+      [n19] add               in=[y(t36), fc3.bias(t13)]
                                out=[y(t37)]
-      [n23] mul               in=[y(t34), y(t37)]
+      [n20] relu              in=[y(t37)]
                                out=[y(t38)]
-      [n24] sum               in=[y(t38)]
-                               out=[y(t39)]  {axes:[0], keepDims:true}
-      [n25] reshape           in=[y(t39)]
-                               out=[y(t40)]  {shape:[128]}
-      [n26] transpose         in=[fc2.weight(t18)]
+      [n21] matmul            in=[y(t38), fc4.weight(t14)]
+                               out=[y(t39)]
+      [n22] add               in=[y(t39), fc4.bias(t15)]
+                               out=[y(t40)]
+      [n23] relu              in=[y(t40)]
                                out=[y(t41)]
-      [n27] matmul            in=[y(t38), y(t41)]
+      [n24] matmul            in=[y(t41), fc5.weight(t16)]
                                out=[y(t42)]
-      [n28] transpose         in=[y(t25)]
+      [n25] add               in=[y(t42), fc5.bias(t17)]
                                out=[y(t43)]
-      [n29] matmul            in=[y(t43), y(t38)]
+      [n26] softmax           in=[y(t43)]
                                out=[y(t44)]
-      [n30] step              in=[y(t24)]
-                               out=[y(t45)]
-      [n31] mul               in=[y(t42), y(t45)]
-                               out=[y(t46)]
-      [n32] sum               in=[y(t46)]
-                               out=[y(t47)]  {axes:[0], keepDims:true}
-      [n33] reshape           in=[y(t47)]
-                               out=[y(t48)]  {shape:[256]}
-      [n34] transpose         in=[fc1.weight(t16)]
-                               out=[y(t49)]
-      [n35] matmul            in=[y(t46), y(t49)]
-                               out=[y(t50)]
-      [n36] transpose         in=[x(t15)]
-                               out=[y(t51)]
-      [n37] matmul            in=[y(t51), y(t46)]
-                               out=[y(t52)]
-  ▸ Tensors (38):
-      [t15] x                  producer=<input>        dtype=float32
-      [t16] fc1.weight         producer=<input>        dtype=float32
-      [t17] fc1.bias           producer=<input>        dtype=float32
-      [t18] fc2.weight         producer=<input>        dtype=float32
-      [t19] fc2.bias           producer=<input>        dtype=float32
-      [t20] fc3.weight         producer=<input>        dtype=float32
-      [t21] fc3.bias           producer=<input>        dtype=float32
-      [t22] grad_y             producer=<input>        dtype=float32
-      [t23] y                  producer=n8             dtype=float32
-      [t24] y                  producer=n9             dtype=float32
-      [t25] y                  producer=n10            dtype=float32
-      [t26] y                  producer=n11            dtype=float32
-      [t27] y                  producer=n12            dtype=float32
-      [t28] y                  producer=n13            dtype=float32
-      [t29] y                  producer=n14            dtype=float32
-      [t30] y                  producer=n15            dtype=float32
-      [t31] y                  producer=n16            dtype=float32
-      [t32] y                  producer=n17            dtype=float32
-      [t33] y                  producer=n18            dtype=float32
-      [t34] y                  producer=n19            dtype=float32
-      [t35] y                  producer=n20            dtype=float32
-      [t36] y                  producer=n21            dtype=float32
-      [t37] y                  producer=n22            dtype=float32
-      [t38] y                  producer=n23            dtype=float32
-      [t39] y                  producer=n24            dtype=float32
-      [t40] y                  producer=n25            dtype=float32
-      [t41] y                  producer=n26            dtype=float32
-      [t42] y                  producer=n27            dtype=float32
-      [t43] y                  producer=n28            dtype=float32
-      [t44] y                  producer=n29            dtype=float32
-      [t45] y                  producer=n30            dtype=float32
-      [t46] y                  producer=n31            dtype=float32
-      [t47] y                  producer=n32            dtype=float32
-      [t48] y                  producer=n33            dtype=float32
-      [t49] y                  producer=n34            dtype=float32
-      [t50] y                  producer=n35            dtype=float32
-      [t51] y                  producer=n36            dtype=float32
-      [t52] y                  producer=n37            dtype=float32
+  ▸ Tensors (45):
+      [t0] inp_0              producer=<input>        dtype=float32
+      [t1] fc1.weight         producer=<input>        dtype=float32
+      [t10] const_2pm6         producer=<input>        dtype=float32
+      [t11] const_qiid         producer=<input>        dtype=float32
+      [t12] fc3.weight         producer=<input>        dtype=float32
+      [t13] fc3.bias           producer=<input>        dtype=float32
+      [t14] fc4.weight         producer=<input>        dtype=float32
+      [t15] fc4.bias           producer=<input>        dtype=float32
+      [t16] fc5.weight         producer=<input>        dtype=float32
+      [t17] fc5.bias           producer=<input>        dtype=float32
+      [t18] y                  producer=n0             dtype=float32
+      [t19] y                  producer=n1             dtype=float32
+      [t2] fc1.bias           producer=<input>        dtype=float32
+      [t20] y                  producer=n2             dtype=float32
+      [t21] y                  producer=n3             dtype=float32
+      [t22] y                  producer=n4             dtype=float32
+      [t23] y                  producer=n5             dtype=float32
+      [t24] y                  producer=n6             dtype=float32
+      [t25] y                  producer=n7             dtype=float32
+      [t26] y                  producer=n8             dtype=float32
+      [t27] y                  producer=n9             dtype=float32
+      [t28] y                  producer=n10            dtype=float32
+      [t29] y                  producer=n11            dtype=float32
+      [t3] fc2.weight         producer=<input>        dtype=float32
+      [t30] y                  producer=n12            dtype=float32
+      [t31] y                  producer=n13            dtype=float32
+      [t32] y                  producer=n14            dtype=float32
+      [t33] y                  producer=n15            dtype=float32
+      [t34] y                  producer=n16            dtype=float32
+      [t35] y                  producer=n17            dtype=float32
+      [t36] y                  producer=n18            dtype=float32
+      [t37] y                  producer=n19            dtype=float32
+      [t38] y                  producer=n20            dtype=float32
+      [t39] y                  producer=n21            dtype=float32
+      [t4] fc2.bias           producer=<input>        dtype=float32
+      [t40] y                  producer=n22            dtype=float32
+      [t41] y                  producer=n23            dtype=float32
+      [t42] y                  producer=n24            dtype=float32
+      [t43] y                  producer=n25            dtype=float32
+      [t44] y                  producer=n26            dtype=float32
+      [t5] const_dqk3         producer=<input>        dtype=float32
+      [t6] const_wxho         producer=<input>        dtype=float32
+      [t7] const_84sq         producer=<input>        dtype=float32
+      [t8] const_k7n1         producer=<input>        dtype=float32
+      [t9] const_s8bm         producer=<input>        dtype=float32
 ──────────────────────────────────────────────────────────────
 
   [ConstantFoldingPass] · ──────────────────────────────────────────────────
   [ConstantFoldingPass] · Running pass: ConstantFoldingPass
-  [ConstantFoldingPass] · ConstantFoldingPass complete: 0 node(s) folded, 0 skipped.
-  [ConstantFoldingPass] · No changes in "ConstantFoldingPass"
+  [ConstantFoldingPass] · CF: folded "n8" (op=add) → const "n_cf_0", output shape=[]
+  [ConstantFoldingPass] · ConstantFoldingPass complete: 1 node(s) folded, 0 skipped.
+  [ConstantFoldingPass] · Graph modified by "ConstantFoldingPass"
   [ConstantFoldingPass] · Graph valid after "ConstantFoldingPass" ✓
   [CSEPass] · ──────────────────────────────────────────────────
   [CSEPass] · Running pass: CSEPass
-  [CSEPass] · CSEPass complete: 0 duplicate node(s) eliminated.
-  [CSEPass] · No changes in "CSEPass"
+  [CSEPass] · CSE: eliminated duplicate node "n3" (op=matmul) — using canonical "n0"
+  [CSEPass] · CSE: eliminated duplicate node "n4" (op=add) — using canonical "n1"
+  [CSEPass] · CSEPass complete: 2 duplicate node(s) eliminated.
+  [CSEPass] · Graph modified by "CSEPass"
   [CSEPass] · Graph valid after "CSEPass" ✓
   [DeadCodeEliminationPass] · ──────────────────────────────────────────────────
   [DeadCodeEliminationPass] · Running pass: DeadCodeEliminationPass
-  [DeadCodeEliminationPass] · DCE: removed dead node "n14" (op=matmul)
-  [DeadCodeEliminationPass] · DCE: removed dead node "n15" (op=add)
-  [DeadCodeEliminationPass] · DCE: removed dead node "n34" (op=transpose)
-  [DeadCodeEliminationPass] · DCE: removed dead node "n35" (op=matmul)
-  [DeadCodeEliminationPass] · DCE: removed unused graph input "t21" (fc3.bias).
-  [DeadCodeEliminationPass] · DeadCodeEliminationPass complete: 4 node(s) removed, 4 tensor(s) removed, 1 unused input(s) removed.
+  [DeadCodeEliminationPass] · DCE: removed dead node "n5" (op=matmul)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n6" (op=add)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n7" (op=mul)
+  [DeadCodeEliminationPass] · DCE: removed unused graph input "t5" (const_dqk3).
+  [DeadCodeEliminationPass] · DCE: removed unused graph input "t6" (const_wxho).
+  [DeadCodeEliminationPass] · DCE: removed unused graph input "t7" (const_84sq).
+  [DeadCodeEliminationPass] · DeadCodeEliminationPass complete: 3 node(s) removed, 3 tensor(s) removed, 3 unused input(s) removed.
   [DeadCodeEliminationPass] · Graph modified by "DeadCodeEliminationPass"
   [DeadCodeEliminationPass] · Graph valid after "DeadCodeEliminationPass" ✓
   [LayoutInsertionPass] · ──────────────────────────────────────────────────
@@ -356,40 +181,665 @@
   [LayoutTransformPass] · Graph valid after "LayoutTransformPass" ✓
   [FusionPass] · ──────────────────────────────────────────────────
   [FusionPass] · Running pass: FusionPass
-  [FusionPass] · Rejected n16(sum) [NoMatchingRule]: No fusion rule starts with op "sum".
-  [FusionPass] · Rejected n17(reshape) [NoMatchingRule]: No fusion rule starts with op "reshape".
-  [FusionPass] · Rejected n18(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
-  [FusionPass] · Rejected n19(matmul) [PatternOpMismatch] (rule: matmul→add→relu): Expected op "add" at step 1 (rule "matmul→add→relu") but found "mul" (node "n23").
-  [FusionPass] · Rejected n26(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
-  [FusionPass] · Rejected n36(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
-  [FusionPass] · Rejected n10(relu) [NoMatchingRule]: No fusion rule starts with op "relu".
-  [FusionPass] · Rejected n13(relu) [NoMatchingRule]: No fusion rule starts with op "relu".
-  [FusionPass] · Rejected n20(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
-  [FusionPass] · Rejected n21(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t36" produced by "n21" (matmul) is a graph output and cannot be an internal chain edge.
-  [FusionPass] · Rejected n22(step) [NoMatchingRule]: No fusion rule starts with op "step".
-  [FusionPass] · Rejected n23(mul) [BranchingIntermediateTensor] (rule: mul→relu): Tensor "t38" has 3 consumer(s): [n24, n27, n29]. A fusible chain requires a single-consumer path.
-  [FusionPass] · Rejected n24(sum) [NoMatchingRule]: No fusion rule starts with op "sum".
-  [FusionPass] · Rejected n25(reshape) [NoMatchingRule]: No fusion rule starts with op "reshape".
-  [FusionPass] · Rejected n27(matmul) [PatternOpMismatch] (rule: matmul→add→relu): Expected op "add" at step 1 (rule "matmul→add→relu") but found "mul" (node "n31").
-  [FusionPass] · Rejected n28(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
-  [FusionPass] · Rejected n29(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t44" produced by "n29" (matmul) is a graph output and cannot be an internal chain edge.
-  [FusionPass] · Rejected n30(step) [NoMatchingRule]: No fusion rule starts with op "step".
-  [FusionPass] · Rejected n31(mul) [BranchingIntermediateTensor] (rule: mul→relu): Tensor "t46" has 2 consumer(s): [n32, n37]. A fusible chain requires a single-consumer path.
-  [FusionPass] · Rejected n32(sum) [NoMatchingRule]: No fusion rule starts with op "sum".
-  [FusionPass] · Rejected n33(reshape) [NoMatchingRule]: No fusion rule starts with op "reshape".
-  [FusionPass] · Rejected n37(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t52" produced by "n37" (matmul) is a graph output and cannot be an internal chain edge.
-  [FusionPass] · Found 2 candidate chain(s) (22 rejected).
-  [FusionPass] · Fusing: [n8(matmul) → n9(add)] ⟹  n_fused_3(linear)
-  [FusionPass] ·   Inputs:  [t15, t16, t17]
-  [FusionPass] ·   Outputs: [t24] → [t_fused_3_0]
-  [FusionPass] · Fusing: [n11(matmul) → n12(add)] ⟹  n_fused_4(linear)
-  [FusionPass] ·   Inputs:  [t25, t18, t19]
-  [FusionPass] ·   Outputs: [t27] → [t_fused_4_0]
+  [FusionPass] · Rejected n_cf_0(const) [NoMatchingRule]: No fusion rule starts with op "const".
+  [FusionPass] · Rejected n12(mul) [BranchingIntermediateTensor] (rule: mul→relu): Tensor "t30" has 2 consumer(s): [n13, n14]. A fusible chain requires a single-consumer path.
+  [FusionPass] · Rejected n13(sub) [NoMatchingRule]: No fusion rule starts with op "sub".
+  [FusionPass] · Rejected n14(sub) [NoMatchingRule]: No fusion rule starts with op "sub".
+  [FusionPass] · Rejected n15(add) [PatternOpMismatch] (rule: add→relu): Expected op "relu" at step 1 (rule "add→relu") but found "add" (node "n16").
+  [FusionPass] · Rejected n16(add) [PatternOpMismatch] (rule: add→relu): Expected op "relu" at step 1 (rule "add→relu") but found "mul" (node "n17").
+  [FusionPass] · Rejected n17(mul) [PatternOpMismatch] (rule: mul→relu): Expected op "relu" at step 1 (rule "mul→relu") but found "matmul" (node "n18").
+  [FusionPass] · Rejected n26(softmax) [NoMatchingRule]: No fusion rule starts with op "softmax".
+  [FusionPass] · Found 5 candidate chain(s) (8 rejected).
+  [FusionPass] · Fusing: [n0(matmul) → n1(add) → n2(relu)] ⟹  n_fused_0(linear_relu)
+  [FusionPass] ·   Inputs:  [t0, t1, t2]
+  [FusionPass] ·   Outputs: [t20] → [t_fused_0_0]
+  [FusionPass] · Fusing: [n9(matmul) → n10(add) → n11(relu)] ⟹  n_fused_1(linear_relu)
+  [FusionPass] ·   Inputs:  [t_fused_0_0, t3, t4]
+  [FusionPass] ·   Outputs: [t29] → [t_fused_1_0]
+  [FusionPass] · Fusing: [n18(matmul) → n19(add) → n20(relu)] ⟹  n_fused_2(linear_relu)
+  [FusionPass] ·   Inputs:  [t35, t12, t13]
+  [FusionPass] ·   Outputs: [t38] → [t_fused_2_0]
+  [FusionPass] · Fusing: [n21(matmul) → n22(add) → n23(relu)] ⟹  n_fused_3(linear_relu)
+  [FusionPass] ·   Inputs:  [t_fused_2_0, t14, t15]
+  [FusionPass] ·   Outputs: [t41] → [t_fused_3_0]
+  [FusionPass] · Fusing: [n24(matmul) → n25(add)] ⟹  n_fused_4(linear)
+  [FusionPass] ·   Inputs:  [t_fused_3_0, t16, t17]
+  [FusionPass] ·   Outputs: [t43] → [t_fused_4_0]
   [FusionPass] · Graph modified by "FusionPass"
   [FusionPass] · Graph valid after "FusionPass" ✓
   [LoopLoweringPass] · ──────────────────────────────────────────────────
   [LoopLoweringPass] · Running pass: LoopLoweringPass
-  [LoopLoweringPass] · Lowered 6 output(s) → 6 LoopFunction(s)
+  [LoopLoweringPass] · Lowered 1 output(s) → 1 LoopFunction(s)
+  [LoopLoweringPass] ⚠ Node "n_cf_0" (const): no lowering rule available — skipped.
+  [LoopLoweringPass] · No changes in "LoopLoweringPass"
+  [LoopLoweringPass] · Graph valid after "LoopLoweringPass" ✓
+
+  ✓ forward pipeline complete. Passes run: 7
+
+──────────────────────────────────────────────────────────────
+  forward optimised graph
+  Graph : classifier_opt_opt_opt_opt
+  Nodes : 13   Tensors : 28
+──────────────────────────────────────────────────────────────
+  ▸ Inputs:
+      [t0] inp_0              dtype=float32  shape=[128,128]
+      [t1] fc1.weight         dtype=float32  shape=[128,256]
+      [t2] fc1.bias           dtype=float32  shape=[256]
+      [t3] fc2.weight         dtype=float32  shape=[256,256]
+      [t4] fc2.bias           dtype=float32  shape=[256]
+      [t8] const_k7n1         dtype=float32  shape=[]
+      [t9] const_s8bm         dtype=float32  shape=[]
+      [t10] const_2pm6         dtype=float32  shape=[]
+      [t11] const_qiid         dtype=float32  shape=[]
+      [t12] fc3.weight         dtype=float32  shape=[256,128]
+      [t13] fc3.bias           dtype=float32  shape=[128]
+      [t14] fc4.weight         dtype=float32  shape=[128,64]
+      [t15] fc4.bias           dtype=float32  shape=[64]
+      [t16] fc5.weight         dtype=float32  shape=[64,32]
+      [t17] fc5.bias           dtype=float32  shape=[32]
+  ▸ Outputs:
+      [t44] y                  dtype=float32  shape=[128,32]
+  ▸ Nodes (13):
+      [n_fused_0] linear_relu       in=[inp_0(t0), fc1.weight(t1), fc1.bias(t2)]
+                                     out=[linear_relu_out(t_fused_0_0)]  {fusedFrom:[t20]}
+      [n_cf_0] const             in=[—]
+                                  out=[y(t26)]  {foldedFrom:"add"}
+      [n_fused_1] linear_relu       in=[linear_relu_out(t_fused_0_0), fc2.weight(t3), fc2.bias(t4)]
+                                     out=[linear_relu_out(t_fused_1_0)]  {fusedFrom:[t29]}
+      [n12] mul               in=[linear_relu_out(t_fused_1_0), y(t26)]
+                               out=[y(t30)]
+      [n13] sub               in=[y(t30), const_k7n1(t8)]
+                               out=[y(t31)]
+      [n14] sub               in=[y(t30), const_s8bm(t9)]
+                               out=[y(t32)]
+      [n15] add               in=[y(t31), y(t32)]
+                               out=[y(t33)]
+      [n16] add               in=[y(t33), const_2pm6(t10)]
+                               out=[y(t34)]
+      [n17] mul               in=[y(t34), const_qiid(t11)]
+                               out=[y(t35)]
+      [n_fused_2] linear_relu       in=[y(t35), fc3.weight(t12), fc3.bias(t13)]
+                                     out=[linear_relu_out(t_fused_2_0)]  {fusedFrom:[t38]}
+      [n_fused_3] linear_relu       in=[linear_relu_out(t_fused_2_0), fc4.weight(t14), fc4.bias(t15)]
+                                     out=[linear_relu_out(t_fused_3_0)]  {fusedFrom:[t41]}
+      [n_fused_4] linear            in=[linear_relu_out(t_fused_3_0), fc5.weight(t16), fc5.bias(t17)]
+                                     out=[linear_out(t_fused_4_0)]  {fusedFrom:[t43]}
+      [n26] softmax           in=[linear_out(t_fused_4_0)]
+                               out=[y(t44)]
+  ▸ Tensors (28):
+      [t_fused_0_0] linear_relu_out    producer=n_fused_0      dtype=float32
+      [t_fused_1_0] linear_relu_out    producer=n_fused_1      dtype=float32
+      [t_fused_2_0] linear_relu_out    producer=n_fused_2      dtype=float32
+      [t_fused_3_0] linear_relu_out    producer=n_fused_3      dtype=float32
+      [t_fused_4_0] linear_out         producer=n_fused_4      dtype=float32
+      [t0] inp_0              producer=<input>        dtype=float32
+      [t1] fc1.weight         producer=<input>        dtype=float32
+      [t10] const_2pm6         producer=<input>        dtype=float32
+      [t11] const_qiid         producer=<input>        dtype=float32
+      [t12] fc3.weight         producer=<input>        dtype=float32
+      [t13] fc3.bias           producer=<input>        dtype=float32
+      [t14] fc4.weight         producer=<input>        dtype=float32
+      [t15] fc4.bias           producer=<input>        dtype=float32
+      [t16] fc5.weight         producer=<input>        dtype=float32
+      [t17] fc5.bias           producer=<input>        dtype=float32
+      [t2] fc1.bias           producer=<input>        dtype=float32
+      [t26] y                  producer=n_cf_0         dtype=float32
+      [t3] fc2.weight         producer=<input>        dtype=float32
+      [t30] y                  producer=n12            dtype=float32
+      [t31] y                  producer=n13            dtype=float32
+      [t32] y                  producer=n14            dtype=float32
+      [t33] y                  producer=n15            dtype=float32
+      [t34] y                  producer=n16            dtype=float32
+      [t35] y                  producer=n17            dtype=float32
+      [t4] fc2.bias           producer=<input>        dtype=float32
+      [t44] y                  producer=n26            dtype=float32
+      [t8] const_k7n1         producer=<input>        dtype=float32
+      [t9] const_s8bm         producer=<input>        dtype=float32
+──────────────────────────────────────────────────────────────
+
+
+······························································
+  Diff after forward full pipeline diff
+······························································
+  Nodes  : 27 → 13  (-14 ✓)
+  Tensors: 45    → 28     (-17 ✓)
+  Removed: n0(matmul), n1(add), n2(relu), n3(matmul), n4(add), n5(matmul), n6(add), n7(mul), n8(add), n9(matmul), n10(add), n11(relu), n18(matmul), n19(add), n20(relu), n21(matmul), n22(add), n23(relu), n24(matmul), n25(add)
+  Added  : n_fused_0(linear_relu), n_cf_0(const), n_fused_1(linear_relu), n_fused_2(linear_relu), n_fused_3(linear_relu), n_fused_4(linear)
+······························································
+
+
+──────────────────────────────────────────────────────────────
+  Loop IR (Optimised) — forward
+  Loop IR Module : classifier_opt_opt_opt_opt  (1 function)
+──────────────────────────────────────────────────────────────
+  ▸ fn compute_y_t44  [in: inp_0(128×128), fc1.weight(128×256), fc1.bias(256), fc2.weight(256×256), fc2.bias(256), const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32)]  [out: y(128×32)]  [temps: linear_relu_out(128×256), y(), linear_relu_out(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_relu_out(128×128), linear_relu_out(128×64), linear_out(128×32)]
+    for i in [0, 128):
+      for j in [0, 256):
+        linear_relu_out[i, j] = fc1.bias[j]
+        for k in [0, 128):
+          linear_relu_out[i, j] += (inp_0[i, k] * fc1.weight[k, j])
+        linear_relu_out[i, j] = max(0.0, linear_relu_out[i, j])
+    for i in [0, 128):
+      for j in [0, 256):
+        linear_relu_out[i, j] = fc2.bias[j]
+        for k in [0, 256):
+          linear_relu_out[i, j] += (linear_relu_out[i, k] * fc2.weight[k, j])
+        linear_relu_out[i, j] = max(0.0, linear_relu_out[i, j])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (linear_relu_out[i0, i1] * y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
+      for j in [0, 128):
+        linear_relu_out[i, j] = fc3.bias[j]
+        for k in [0, 256):
+          linear_relu_out[i, j] += (y[i, k] * fc3.weight[k, j])
+        linear_relu_out[i, j] = max(0.0, linear_relu_out[i, j])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_relu_out[i, j] = fc4.bias[j]
+        for k in [0, 128):
+          linear_relu_out[i, j] += (linear_relu_out[i, k] * fc4.weight[k, j])
+        linear_relu_out[i, j] = max(0.0, linear_relu_out[i, j])
+    for i in [0, 128):
+      for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (linear_relu_out[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
+······························································
+  ▸ Diagnostics:
+      ⚠  Node "n_cf_0" (const): no lowering rule available — skipped.
+······························································
+──────────────────────────────────────────────────────────────
+
+══════════════════════════════════════════════════════════════════
+  Phase — Compiler optimisation: BACKWARD graph
+══════════════════════════════════════════════════════════════════
+  ✓ backward compiler graph valid — 87 nodes
+
+──────────────────────────────────────────────────────────────
+  backward input graph
+  Graph : backward
+  Nodes : 87   Tensors : 106
+──────────────────────────────────────────────────────────────
+  ▸ Inputs:
+      [t45] inp_0              dtype=float32  shape=[128,128]
+      [t46] fc1.weight         dtype=float32  shape=[128,256]
+      [t47] fc1.bias           dtype=float32  shape=[256]
+      [t48] fc2.weight         dtype=float32  shape=[256,256]
+      [t49] fc2.bias           dtype=float32  shape=[256]
+      [t50] const_dqk3         dtype=float32  shape=[]
+      [t51] const_wxho         dtype=float32  shape=[]
+      [t52] const_84sq         dtype=float32  shape=[]
+      [t53] const_k7n1         dtype=float32  shape=[]
+      [t54] const_s8bm         dtype=float32  shape=[]
+      [t55] const_2pm6         dtype=float32  shape=[]
+      [t56] const_qiid         dtype=float32  shape=[]
+      [t57] fc3.weight         dtype=float32  shape=[256,128]
+      [t58] fc3.bias           dtype=float32  shape=[128]
+      [t59] fc4.weight         dtype=float32  shape=[128,64]
+      [t60] fc4.bias           dtype=float32  shape=[64]
+      [t61] fc5.weight         dtype=float32  shape=[64,32]
+      [t62] fc5.bias           dtype=float32  shape=[32]
+      [t63] grad_y             dtype=float32  shape=[128,32]
+  ▸ Outputs:
+      [t150] y                  dtype=float32  shape=[128,256]
+      [t146] y                  dtype=float32  shape=[256]
+      [t142] y                  dtype=float32  shape=[256,256]
+      [t138] y                  dtype=float32  shape=[256]
+      [t117] y                  dtype=float32  shape=[256,128]
+      [t113] y                  dtype=float32  shape=[128]
+      [t109] y                  dtype=float32  shape=[128,64]
+      [t105] y                  dtype=float32  shape=[64]
+      [t101] y                  dtype=float32  shape=[64,32]
+      [t97] y                  dtype=float32  shape=[32]
+  ▸ Nodes (87):
+      [n27] matmul            in=[inp_0(t45), fc1.weight(t46)]
+                               out=[y(t64)]
+      [n28] add               in=[y(t64), fc1.bias(t47)]
+                               out=[y(t65)]
+      [n29] relu              in=[y(t65)]
+                               out=[y(t66)]
+      [n30] matmul            in=[inp_0(t45), fc1.weight(t46)]
+                               out=[y(t67)]
+      [n31] add               in=[y(t67), fc1.bias(t47)]
+                               out=[y(t68)]
+      [n32] matmul            in=[y(t68), fc2.weight(t48)]
+                               out=[y(t69)]
+      [n33] add               in=[y(t69), fc2.bias(t49)]
+                               out=[y(t70)]
+      [n34] mul               in=[y(t70), const_dqk3(t50)]
+                               out=[y(t71)]
+      [n35] add               in=[const_wxho(t51), const_84sq(t52)]
+                               out=[y(t72)]
+      [n36] matmul            in=[y(t66), fc2.weight(t48)]
+                               out=[y(t73)]
+      [n37] add               in=[y(t73), fc2.bias(t49)]
+                               out=[y(t74)]
+      [n38] relu              in=[y(t74)]
+                               out=[y(t75)]
+      [n39] mul               in=[y(t75), y(t72)]
+                               out=[y(t76)]
+      [n40] sub               in=[y(t76), const_k7n1(t53)]
+                               out=[y(t77)]
+      [n41] sub               in=[y(t76), const_s8bm(t54)]
+                               out=[y(t78)]
+      [n42] add               in=[y(t77), y(t78)]
+                               out=[y(t79)]
+      [n43] add               in=[y(t79), const_2pm6(t55)]
+                               out=[y(t80)]
+      [n44] mul               in=[y(t80), const_qiid(t56)]
+                               out=[y(t81)]
+      [n45] matmul            in=[y(t81), fc3.weight(t57)]
+                               out=[y(t82)]
+      [n46] add               in=[y(t82), fc3.bias(t58)]
+                               out=[y(t83)]
+      [n47] relu              in=[y(t83)]
+                               out=[y(t84)]
+      [n48] matmul            in=[y(t84), fc4.weight(t59)]
+                               out=[y(t85)]
+      [n49] add               in=[y(t85), fc4.bias(t60)]
+                               out=[y(t86)]
+      [n50] relu              in=[y(t86)]
+                               out=[y(t87)]
+      [n51] matmul            in=[y(t87), fc5.weight(t61)]
+                               out=[y(t88)]
+      [n52] add               in=[y(t88), fc5.bias(t62)]
+                               out=[y(t89)]
+      [n53] softmax           in=[y(t89)]
+                               out=[y(t90)]
+      [n54] softmax           in=[y(t89)]
+                               out=[y(t91)]
+      [n55] mul               in=[grad_y(t63), y(t91)]
+                               out=[y(t92)]
+      [n56] sum               in=[y(t92)]
+                               out=[y(t93)]  {axes:[1], keepDims:true}
+      [n57] sub               in=[grad_y(t63), y(t93)]
+                               out=[y(t94)]
+      [n58] mul               in=[y(t91), y(t94)]
+                               out=[y(t95)]
+      [n59] sum               in=[y(t95)]
+                               out=[y(t96)]  {axes:[0], keepDims:true}
+      [n60] reshape           in=[y(t96)]
+                               out=[y(t97)]  {shape:[32]}
+      [n61] transpose         in=[fc5.weight(t61)]
+                               out=[y(t98)]
+      [n62] matmul            in=[y(t95), y(t98)]
+                               out=[y(t99)]
+      [n63] transpose         in=[y(t87)]
+                               out=[y(t100)]
+      [n64] matmul            in=[y(t100), y(t95)]
+                               out=[y(t101)]
+      [n65] step              in=[y(t86)]
+                               out=[y(t102)]
+      [n66] mul               in=[y(t99), y(t102)]
+                               out=[y(t103)]
+      [n67] sum               in=[y(t103)]
+                               out=[y(t104)]  {axes:[0], keepDims:true}
+      [n68] reshape           in=[y(t104)]
+                               out=[y(t105)]  {shape:[64]}
+      [n69] transpose         in=[fc4.weight(t59)]
+                               out=[y(t106)]
+      [n70] matmul            in=[y(t103), y(t106)]
+                               out=[y(t107)]
+      [n71] transpose         in=[y(t84)]
+                               out=[y(t108)]
+      [n72] matmul            in=[y(t108), y(t103)]
+                               out=[y(t109)]
+      [n73] step              in=[y(t83)]
+                               out=[y(t110)]
+      [n74] mul               in=[y(t107), y(t110)]
+                               out=[y(t111)]
+      [n75] sum               in=[y(t111)]
+                               out=[y(t112)]  {axes:[0], keepDims:true}
+      [n76] reshape           in=[y(t112)]
+                               out=[y(t113)]  {shape:[128]}
+      [n77] transpose         in=[fc3.weight(t57)]
+                               out=[y(t114)]
+      [n78] matmul            in=[y(t111), y(t114)]
+                               out=[y(t115)]
+      [n79] transpose         in=[y(t81)]
+                               out=[y(t116)]
+      [n80] matmul            in=[y(t116), y(t111)]
+                               out=[y(t117)]
+      [n81] mul               in=[y(t115), const_qiid(t56)]
+                               out=[y(t118)]
+      [n82] mul               in=[y(t115), y(t80)]
+                               out=[y(t119)]
+      [n83] sum               in=[y(t119)]
+                               out=[y(t120)]  {axes:[0,1], keepDims:true}
+      [n84] reshape           in=[y(t120)]
+                               out=[y(t121)]  {shape:[]}
+      [n85] sum               in=[y(t118)]
+                               out=[y(t122)]  {axes:[0,1], keepDims:true}
+      [n86] reshape           in=[y(t122)]
+                               out=[y(t123)]  {shape:[]}
+      [n87] neg               in=[y(t118)]
+                               out=[y(t124)]
+      [n88] sum               in=[y(t124)]
+                               out=[y(t125)]  {axes:[0,1], keepDims:true}
+      [n89] reshape           in=[y(t125)]
+                               out=[y(t126)]  {shape:[]}
+      [n90] neg               in=[y(t118)]
+                               out=[y(t127)]
+      [n91] sum               in=[y(t127)]
+                               out=[y(t128)]  {axes:[0,1], keepDims:true}
+      [n92] reshape           in=[y(t128)]
+                               out=[y(t129)]  {shape:[]}
+      [n93] add               in=[y(t118), y(t118)]
+                               out=[y(t130)]
+      [n94] mul               in=[y(t130), y(t72)]
+                               out=[y(t131)]
+      [n95] mul               in=[y(t130), y(t75)]
+                               out=[y(t132)]
+      [n96] sum               in=[y(t132)]
+                               out=[y(t133)]  {axes:[0,1], keepDims:true}
+      [n97] reshape           in=[y(t133)]
+                               out=[y(t134)]  {shape:[]}
+      [n98] step              in=[y(t74)]
+                               out=[y(t135)]
+      [n99] mul               in=[y(t131), y(t135)]
+                               out=[y(t136)]
+      [n100] sum               in=[y(t136)]
+                                out=[y(t137)]  {axes:[0], keepDims:true}
+      [n101] reshape           in=[y(t137)]
+                                out=[y(t138)]  {shape:[256]}
+      [n102] transpose         in=[fc2.weight(t48)]
+                                out=[y(t139)]
+      [n103] matmul            in=[y(t136), y(t139)]
+                                out=[y(t140)]
+      [n104] transpose         in=[y(t66)]
+                                out=[y(t141)]
+      [n105] matmul            in=[y(t141), y(t136)]
+                                out=[y(t142)]
+      [n106] step              in=[y(t65)]
+                                out=[y(t143)]
+      [n107] mul               in=[y(t140), y(t143)]
+                                out=[y(t144)]
+      [n108] sum               in=[y(t144)]
+                                out=[y(t145)]  {axes:[0], keepDims:true}
+      [n109] reshape           in=[y(t145)]
+                                out=[y(t146)]  {shape:[256]}
+      [n110] transpose         in=[fc1.weight(t46)]
+                                out=[y(t147)]
+      [n111] matmul            in=[y(t144), y(t147)]
+                                out=[y(t148)]
+      [n112] transpose         in=[inp_0(t45)]
+                                out=[y(t149)]
+      [n113] matmul            in=[y(t149), y(t144)]
+                                out=[y(t150)]
+  ▸ Tensors (106):
+      [t100] y                  producer=n63            dtype=float32
+      [t101] y                  producer=n64            dtype=float32
+      [t102] y                  producer=n65            dtype=float32
+      [t103] y                  producer=n66            dtype=float32
+      [t104] y                  producer=n67            dtype=float32
+      [t105] y                  producer=n68            dtype=float32
+      [t106] y                  producer=n69            dtype=float32
+      [t107] y                  producer=n70            dtype=float32
+      [t108] y                  producer=n71            dtype=float32
+      [t109] y                  producer=n72            dtype=float32
+      [t110] y                  producer=n73            dtype=float32
+      [t111] y                  producer=n74            dtype=float32
+      [t112] y                  producer=n75            dtype=float32
+      [t113] y                  producer=n76            dtype=float32
+      [t114] y                  producer=n77            dtype=float32
+      [t115] y                  producer=n78            dtype=float32
+      [t116] y                  producer=n79            dtype=float32
+      [t117] y                  producer=n80            dtype=float32
+      [t118] y                  producer=n81            dtype=float32
+      [t119] y                  producer=n82            dtype=float32
+      [t120] y                  producer=n83            dtype=float32
+      [t121] y                  producer=n84            dtype=float32
+      [t122] y                  producer=n85            dtype=float32
+      [t123] y                  producer=n86            dtype=float32
+      [t124] y                  producer=n87            dtype=float32
+      [t125] y                  producer=n88            dtype=float32
+      [t126] y                  producer=n89            dtype=float32
+      [t127] y                  producer=n90            dtype=float32
+      [t128] y                  producer=n91            dtype=float32
+      [t129] y                  producer=n92            dtype=float32
+      [t130] y                  producer=n93            dtype=float32
+      [t131] y                  producer=n94            dtype=float32
+      [t132] y                  producer=n95            dtype=float32
+      [t133] y                  producer=n96            dtype=float32
+      [t134] y                  producer=n97            dtype=float32
+      [t135] y                  producer=n98            dtype=float32
+      [t136] y                  producer=n99            dtype=float32
+      [t137] y                  producer=n100           dtype=float32
+      [t138] y                  producer=n101           dtype=float32
+      [t139] y                  producer=n102           dtype=float32
+      [t140] y                  producer=n103           dtype=float32
+      [t141] y                  producer=n104           dtype=float32
+      [t142] y                  producer=n105           dtype=float32
+      [t143] y                  producer=n106           dtype=float32
+      [t144] y                  producer=n107           dtype=float32
+      [t145] y                  producer=n108           dtype=float32
+      [t146] y                  producer=n109           dtype=float32
+      [t147] y                  producer=n110           dtype=float32
+      [t148] y                  producer=n111           dtype=float32
+      [t149] y                  producer=n112           dtype=float32
+      [t150] y                  producer=n113           dtype=float32
+      [t45] inp_0              producer=<input>        dtype=float32
+      [t46] fc1.weight         producer=<input>        dtype=float32
+      [t47] fc1.bias           producer=<input>        dtype=float32
+      [t48] fc2.weight         producer=<input>        dtype=float32
+      [t49] fc2.bias           producer=<input>        dtype=float32
+      [t50] const_dqk3         producer=<input>        dtype=float32
+      [t51] const_wxho         producer=<input>        dtype=float32
+      [t52] const_84sq         producer=<input>        dtype=float32
+      [t53] const_k7n1         producer=<input>        dtype=float32
+      [t54] const_s8bm         producer=<input>        dtype=float32
+      [t55] const_2pm6         producer=<input>        dtype=float32
+      [t56] const_qiid         producer=<input>        dtype=float32
+      [t57] fc3.weight         producer=<input>        dtype=float32
+      [t58] fc3.bias           producer=<input>        dtype=float32
+      [t59] fc4.weight         producer=<input>        dtype=float32
+      [t60] fc4.bias           producer=<input>        dtype=float32
+      [t61] fc5.weight         producer=<input>        dtype=float32
+      [t62] fc5.bias           producer=<input>        dtype=float32
+      [t63] grad_y             producer=<input>        dtype=float32
+      [t64] y                  producer=n27            dtype=float32
+      [t65] y                  producer=n28            dtype=float32
+      [t66] y                  producer=n29            dtype=float32
+      [t67] y                  producer=n30            dtype=float32
+      [t68] y                  producer=n31            dtype=float32
+      [t69] y                  producer=n32            dtype=float32
+      [t70] y                  producer=n33            dtype=float32
+      [t71] y                  producer=n34            dtype=float32
+      [t72] y                  producer=n35            dtype=float32
+      [t73] y                  producer=n36            dtype=float32
+      [t74] y                  producer=n37            dtype=float32
+      [t75] y                  producer=n38            dtype=float32
+      [t76] y                  producer=n39            dtype=float32
+      [t77] y                  producer=n40            dtype=float32
+      [t78] y                  producer=n41            dtype=float32
+      [t79] y                  producer=n42            dtype=float32
+      [t80] y                  producer=n43            dtype=float32
+      [t81] y                  producer=n44            dtype=float32
+      [t82] y                  producer=n45            dtype=float32
+      [t83] y                  producer=n46            dtype=float32
+      [t84] y                  producer=n47            dtype=float32
+      [t85] y                  producer=n48            dtype=float32
+      [t86] y                  producer=n49            dtype=float32
+      [t87] y                  producer=n50            dtype=float32
+      [t88] y                  producer=n51            dtype=float32
+      [t89] y                  producer=n52            dtype=float32
+      [t90] y                  producer=n53            dtype=float32
+      [t91] y                  producer=n54            dtype=float32
+      [t92] y                  producer=n55            dtype=float32
+      [t93] y                  producer=n56            dtype=float32
+      [t94] y                  producer=n57            dtype=float32
+      [t95] y                  producer=n58            dtype=float32
+      [t96] y                  producer=n59            dtype=float32
+      [t97] y                  producer=n60            dtype=float32
+      [t98] y                  producer=n61            dtype=float32
+      [t99] y                  producer=n62            dtype=float32
+──────────────────────────────────────────────────────────────
+
+  [ConstantFoldingPass] · ──────────────────────────────────────────────────
+  [ConstantFoldingPass] · Running pass: ConstantFoldingPass
+  [ConstantFoldingPass] · CF: folded "n38" (op=relu) → const "n_cf_1", output shape=[128,256]
+  [ConstantFoldingPass] · CF: folded "n39" (op=mul) → const "n_cf_2", output shape=[128,256]
+  [ConstantFoldingPass] · ConstantFoldingPass complete: 2 node(s) folded, 0 skipped.
+  [ConstantFoldingPass] · Graph modified by "ConstantFoldingPass"
+  [ConstantFoldingPass] · Graph valid after "ConstantFoldingPass" ✓
+  [CSEPass] · ──────────────────────────────────────────────────
+  [CSEPass] · Running pass: CSEPass
+  [CSEPass] · CSE: eliminated duplicate node "n30" (op=matmul) — using canonical "n27"
+  [CSEPass] · CSE: eliminated duplicate node "n31" (op=add) — using canonical "n28"
+  [CSEPass] · CSE: eliminated duplicate node "n54" (op=softmax) — using canonical "n53"
+  [CSEPass] · CSE: eliminated duplicate node "n90" (op=neg) — using canonical "n87"
+  [CSEPass] · CSEPass complete: 4 duplicate node(s) eliminated.
+  [CSEPass] · Graph modified by "CSEPass"
+  [CSEPass] · Graph valid after "CSEPass" ✓
+  [DeadCodeEliminationPass] · ──────────────────────────────────────────────────
+  [DeadCodeEliminationPass] · Running pass: DeadCodeEliminationPass
+  [DeadCodeEliminationPass] · DCE: removed dead node "n32" (op=matmul)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n33" (op=add)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n34" (op=mul)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n82" (op=mul)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n83" (op=sum)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n84" (op=reshape)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n85" (op=sum)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n86" (op=reshape)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n87" (op=neg)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n88" (op=sum)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n89" (op=reshape)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n91" (op=sum)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n92" (op=reshape)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n95" (op=mul)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n96" (op=sum)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n97" (op=reshape)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n110" (op=transpose)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n111" (op=matmul)
+  [DeadCodeEliminationPass] · DCE: removed dead node "n_cf_1" (op=const)
+  [DeadCodeEliminationPass] · DCE: removed unused graph input "t50" (const_dqk3).
+  [DeadCodeEliminationPass] · DeadCodeEliminationPass complete: 19 node(s) removed, 19 tensor(s) removed, 1 unused input(s) removed.
+  [DeadCodeEliminationPass] · Graph modified by "DeadCodeEliminationPass"
+  [DeadCodeEliminationPass] · Graph valid after "DeadCodeEliminationPass" ✓
+  [LayoutInsertionPass] · ──────────────────────────────────────────────────
+  [LayoutInsertionPass] · Running pass: LayoutInsertionPass
+  [LayoutInsertionPass] · No layout conflicts — no transposes inserted.
+  [LayoutInsertionPass] · No changes in "LayoutInsertionPass"
+  [LayoutInsertionPass] · Graph valid after "LayoutInsertionPass" ✓
+  [LayoutTransformPass] · ──────────────────────────────────────────────────
+  [LayoutTransformPass] · Running pass: LayoutTransformPass
+  [LayoutTransformPass] · Layout analysis: 0 elimination candidate(s), 0 conflict(s).
+  [LayoutTransformPass] · No layout chains matched — graph unchanged.
+  [LayoutTransformPass] · No changes in "LayoutTransformPass"
+  [LayoutTransformPass] · Graph valid after "LayoutTransformPass" ✓
+  [FusionPass] · ──────────────────────────────────────────────────
+  [FusionPass] · Running pass: FusionPass
+  [FusionPass] · Rejected n102(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n112(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n106(step) [NoMatchingRule]: No fusion rule starts with op "step".
+  [FusionPass] · Rejected n29(relu) [NoMatchingRule]: No fusion rule starts with op "relu".
+  [FusionPass] · Rejected n104(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n35(add) [PatternOpMismatch] (rule: add→relu): Expected op "relu" at step 1 (rule "add→relu") but found "mul" (node "n94").
+  [FusionPass] · Rejected n61(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n69(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n77(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n98(step) [NoMatchingRule]: No fusion rule starts with op "step".
+  [FusionPass] · Rejected n_cf_2(const) [NoMatchingRule]: No fusion rule starts with op "const".
+  [FusionPass] · Rejected n40(sub) [NoMatchingRule]: No fusion rule starts with op "sub".
+  [FusionPass] · Rejected n41(sub) [NoMatchingRule]: No fusion rule starts with op "sub".
+  [FusionPass] · Rejected n42(add) [PatternOpMismatch] (rule: add→relu): Expected op "relu" at step 1 (rule "add→relu") but found "add" (node "n43").
+  [FusionPass] · Rejected n43(add) [PatternOpMismatch] (rule: add→relu): Expected op "relu" at step 1 (rule "add→relu") but found "mul" (node "n44").
+  [FusionPass] · Rejected n44(mul) [BranchingIntermediateTensor] (rule: mul→relu): Tensor "t81" has 2 consumer(s): [n45, n79]. A fusible chain requires a single-consumer path.
+  [FusionPass] · Rejected n47(relu) [NoMatchingRule]: No fusion rule starts with op "relu".
+  [FusionPass] · Rejected n50(relu) [NoMatchingRule]: No fusion rule starts with op "relu".
+  [FusionPass] · Rejected n53(softmax) [NoMatchingRule]: No fusion rule starts with op "softmax".
+  [FusionPass] · Rejected n55(mul) [PatternOpMismatch] (rule: mul→relu): Expected op "relu" at step 1 (rule "mul→relu") but found "sum" (node "n56").
+  [FusionPass] · Rejected n56(sum) [NoMatchingRule]: No fusion rule starts with op "sum".
+  [FusionPass] · Rejected n57(sub) [NoMatchingRule]: No fusion rule starts with op "sub".
+  [FusionPass] · Rejected n58(mul) [BranchingIntermediateTensor] (rule: mul→relu): Tensor "t95" has 3 consumer(s): [n59, n62, n64]. A fusible chain requires a single-consumer path.
+  [FusionPass] · Rejected n59(sum) [NoMatchingRule]: No fusion rule starts with op "sum".
+  [FusionPass] · Rejected n60(reshape) [NoMatchingRule]: No fusion rule starts with op "reshape".
+  [FusionPass] · Rejected n62(matmul) [PatternOpMismatch] (rule: matmul→add→relu): Expected op "add" at step 1 (rule "matmul→add→relu") but found "mul" (node "n66").
+  [FusionPass] · Rejected n63(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n64(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t101" produced by "n64" (matmul) is a graph output and cannot be an internal chain edge.
+  [FusionPass] · Rejected n65(step) [NoMatchingRule]: No fusion rule starts with op "step".
+  [FusionPass] · Rejected n66(mul) [BranchingIntermediateTensor] (rule: mul→relu): Tensor "t103" has 3 consumer(s): [n67, n70, n72]. A fusible chain requires a single-consumer path.
+  [FusionPass] · Rejected n67(sum) [NoMatchingRule]: No fusion rule starts with op "sum".
+  [FusionPass] · Rejected n68(reshape) [NoMatchingRule]: No fusion rule starts with op "reshape".
+  [FusionPass] · Rejected n70(matmul) [PatternOpMismatch] (rule: matmul→add→relu): Expected op "add" at step 1 (rule "matmul→add→relu") but found "mul" (node "n74").
+  [FusionPass] · Rejected n71(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n72(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t109" produced by "n72" (matmul) is a graph output and cannot be an internal chain edge.
+  [FusionPass] · Rejected n73(step) [NoMatchingRule]: No fusion rule starts with op "step".
+  [FusionPass] · Rejected n74(mul) [BranchingIntermediateTensor] (rule: mul→relu): Tensor "t111" has 3 consumer(s): [n75, n78, n80]. A fusible chain requires a single-consumer path.
+  [FusionPass] · Rejected n75(sum) [NoMatchingRule]: No fusion rule starts with op "sum".
+  [FusionPass] · Rejected n76(reshape) [NoMatchingRule]: No fusion rule starts with op "reshape".
+  [FusionPass] · Rejected n78(matmul) [PatternOpMismatch] (rule: matmul→add→relu): Expected op "add" at step 1 (rule "matmul→add→relu") but found "mul" (node "n81").
+  [FusionPass] · Rejected n79(transpose) [NoMatchingRule]: No fusion rule starts with op "transpose".
+  [FusionPass] · Rejected n80(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t117" produced by "n80" (matmul) is a graph output and cannot be an internal chain edge.
+  [FusionPass] · Rejected n81(mul) [BranchingIntermediateTensor] (rule: mul→relu): Tensor "t118" has 2 consumer(s): [n93, n93]. A fusible chain requires a single-consumer path.
+  [FusionPass] · Rejected n93(add) [PatternOpMismatch] (rule: add→relu): Expected op "relu" at step 1 (rule "add→relu") but found "mul" (node "n94").
+  [FusionPass] · Rejected n94(mul) [PatternOpMismatch] (rule: mul→relu): Expected op "relu" at step 1 (rule "mul→relu") but found "mul" (node "n99").
+  [FusionPass] · Rejected n99(mul) [BranchingIntermediateTensor] (rule: mul→relu): Tensor "t136" has 3 consumer(s): [n100, n103, n105]. A fusible chain requires a single-consumer path.
+  [FusionPass] · Rejected n100(sum) [NoMatchingRule]: No fusion rule starts with op "sum".
+  [FusionPass] · Rejected n101(reshape) [NoMatchingRule]: No fusion rule starts with op "reshape".
+  [FusionPass] · Rejected n103(matmul) [PatternOpMismatch] (rule: matmul→add→relu): Expected op "add" at step 1 (rule "matmul→add→relu") but found "mul" (node "n107").
+  [FusionPass] · Rejected n105(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t142" produced by "n105" (matmul) is a graph output and cannot be an internal chain edge.
+  [FusionPass] · Rejected n107(mul) [BranchingIntermediateTensor] (rule: mul→relu): Tensor "t144" has 2 consumer(s): [n108, n113]. A fusible chain requires a single-consumer path.
+  [FusionPass] · Rejected n108(sum) [NoMatchingRule]: No fusion rule starts with op "sum".
+  [FusionPass] · Rejected n109(reshape) [NoMatchingRule]: No fusion rule starts with op "reshape".
+  [FusionPass] · Rejected n113(matmul) [IntermediateTensorIsGraphOutput] (rule: matmul→add→relu): Tensor "t150" produced by "n113" (matmul) is a graph output and cannot be an internal chain edge.
+  [FusionPass] · Found 5 candidate chain(s) (54 rejected).
+  [FusionPass] · Fusing: [n27(matmul) → n28(add)] ⟹  n_fused_5(linear)
+  [FusionPass] ·   Inputs:  [t45, t46, t47]
+  [FusionPass] ·   Outputs: [t65] → [t_fused_5_0]
+  [FusionPass] · Fusing: [n36(matmul) → n37(add)] ⟹  n_fused_6(linear)
+  [FusionPass] ·   Inputs:  [t66, t48, t49]
+  [FusionPass] ·   Outputs: [t74] → [t_fused_6_0]
+  [FusionPass] · Fusing: [n45(matmul) → n46(add)] ⟹  n_fused_7(linear)
+  [FusionPass] ·   Inputs:  [t81, t57, t58]
+  [FusionPass] ·   Outputs: [t83] → [t_fused_7_0]
+  [FusionPass] · Fusing: [n48(matmul) → n49(add)] ⟹  n_fused_8(linear)
+  [FusionPass] ·   Inputs:  [t84, t59, t60]
+  [FusionPass] ·   Outputs: [t86] → [t_fused_8_0]
+  [FusionPass] · Fusing: [n51(matmul) → n52(add)] ⟹  n_fused_9(linear)
+  [FusionPass] ·   Inputs:  [t87, t61, t62]
+  [FusionPass] ·   Outputs: [t89] → [t_fused_9_0]
+  [FusionPass] · Graph modified by "FusionPass"
+  [FusionPass] · Graph valid after "FusionPass" ✓
+  [LoopLoweringPass] · ──────────────────────────────────────────────────
+  [LoopLoweringPass] · Running pass: LoopLoweringPass
+  [LoopLoweringPass] · Lowered 10 output(s) → 10 LoopFunction(s)
+  [LoopLoweringPass] ⚠ Node "n_cf_2" (const): no lowering rule available — skipped.
+  [LoopLoweringPass] ⚠ Node "n_cf_2" (const): no lowering rule available — skipped.
+  [LoopLoweringPass] ⚠ Node "n_cf_2" (const): no lowering rule available — skipped.
+  [LoopLoweringPass] ⚠ Node "n_cf_2" (const): no lowering rule available — skipped.
+  [LoopLoweringPass] ⚠ Node "n_cf_2" (const): no lowering rule available — skipped.
+  [LoopLoweringPass] ⚠ Node "n_cf_2" (const): no lowering rule available — skipped.
+  [LoopLoweringPass] ⚠ Node "n_cf_2" (const): no lowering rule available — skipped.
+  [LoopLoweringPass] ⚠ Node "n_cf_2" (const): no lowering rule available — skipped.
+  [LoopLoweringPass] ⚠ Node "n_cf_2" (const): no lowering rule available — skipped.
+  [LoopLoweringPass] ⚠ Node "n_cf_2" (const): no lowering rule available — skipped.
   [LoopLoweringPass] · No changes in "LoopLoweringPass"
   [LoopLoweringPass] · Graph valid after "LoopLoweringPass" ✓
 
@@ -397,329 +847,1318 @@
 
 ──────────────────────────────────────────────────────────────
   backward optimised graph
-  Graph : backward_opt_opt
-  Nodes : 24   Tensors : 31
+  Graph : backward_opt_opt_opt_opt
+  Nodes : 59   Tensors : 77
 ──────────────────────────────────────────────────────────────
   ▸ Inputs:
-      [t15] x                  dtype=float32  shape=[32,128]
-      [t16] fc1.weight         dtype=float32  shape=[128,256]
-      [t17] fc1.bias           dtype=float32  shape=[256]
-      [t18] fc2.weight         dtype=float32  shape=[256,128]
-      [t19] fc2.bias           dtype=float32  shape=[128]
-      [t20] fc3.weight         dtype=float32  shape=[128,32]
-      [t22] grad_y             dtype=float32  shape=[32,32]
+      [t45] inp_0              dtype=float32  shape=[128,128]
+      [t46] fc1.weight         dtype=float32  shape=[128,256]
+      [t47] fc1.bias           dtype=float32  shape=[256]
+      [t48] fc2.weight         dtype=float32  shape=[256,256]
+      [t49] fc2.bias           dtype=float32  shape=[256]
+      [t51] const_wxho         dtype=float32  shape=[]
+      [t52] const_84sq         dtype=float32  shape=[]
+      [t53] const_k7n1         dtype=float32  shape=[]
+      [t54] const_s8bm         dtype=float32  shape=[]
+      [t55] const_2pm6         dtype=float32  shape=[]
+      [t56] const_qiid         dtype=float32  shape=[]
+      [t57] fc3.weight         dtype=float32  shape=[256,128]
+      [t58] fc3.bias           dtype=float32  shape=[128]
+      [t59] fc4.weight         dtype=float32  shape=[128,64]
+      [t60] fc4.bias           dtype=float32  shape=[64]
+      [t61] fc5.weight         dtype=float32  shape=[64,32]
+      [t62] fc5.bias           dtype=float32  shape=[32]
+      [t63] grad_y             dtype=float32  shape=[128,32]
   ▸ Outputs:
-      [t52] y                  dtype=float32  shape=[128,256]
-      [t48] y                  dtype=float32  shape=[256]
-      [t44] y                  dtype=float32  shape=[256,128]
-      [t40] y                  dtype=float32  shape=[128]
-      [t36] y                  dtype=float32  shape=[128,32]
-      [t32] y                  dtype=float32  shape=[32]
-  ▸ Nodes (24):
-      [n_fused_3] linear            in=[x(t15), fc1.weight(t16), fc1.bias(t17)]
-                                     out=[linear_out(t_fused_3_0)]  {fusedFrom:[t24]}
-      [n10] relu              in=[linear_out(t_fused_3_0)]
-                               out=[y(t25)]
-      [n_fused_4] linear            in=[y(t25), fc2.weight(t18), fc2.bias(t19)]
-                                     out=[linear_out(t_fused_4_0)]  {fusedFrom:[t27]}
-      [n13] relu              in=[linear_out(t_fused_4_0)]
-                               out=[y(t28)]
-      [n16] sum               in=[grad_y(t22)]
-                               out=[y(t31)]  {axes:[0], keepDims:true}
-      [n17] reshape           in=[y(t31)]
-                               out=[y(t32)]  {shape:[32]}
-      [n18] transpose         in=[fc3.weight(t20)]
-                               out=[y(t33)]
-      [n19] matmul            in=[grad_y(t22), y(t33)]
-                               out=[y(t34)]
-      [n20] transpose         in=[y(t28)]
-                               out=[y(t35)]
-      [n21] matmul            in=[y(t35), grad_y(t22)]
-                               out=[y(t36)]
-      [n22] step              in=[linear_out(t_fused_4_0)]
-                               out=[y(t37)]
-      [n23] mul               in=[y(t34), y(t37)]
-                               out=[y(t38)]
-      [n24] sum               in=[y(t38)]
-                               out=[y(t39)]  {axes:[0], keepDims:true}
-      [n25] reshape           in=[y(t39)]
-                               out=[y(t40)]  {shape:[128]}
-      [n26] transpose         in=[fc2.weight(t18)]
-                               out=[y(t41)]
-      [n27] matmul            in=[y(t38), y(t41)]
-                               out=[y(t42)]
-      [n28] transpose         in=[y(t25)]
-                               out=[y(t43)]
-      [n29] matmul            in=[y(t43), y(t38)]
-                               out=[y(t44)]
-      [n30] step              in=[linear_out(t_fused_3_0)]
-                               out=[y(t45)]
-      [n31] mul               in=[y(t42), y(t45)]
-                               out=[y(t46)]
-      [n32] sum               in=[y(t46)]
-                               out=[y(t47)]  {axes:[0], keepDims:true}
-      [n33] reshape           in=[y(t47)]
-                               out=[y(t48)]  {shape:[256]}
-      [n36] transpose         in=[x(t15)]
-                               out=[y(t51)]
-      [n37] matmul            in=[y(t51), y(t46)]
-                               out=[y(t52)]
-  ▸ Tensors (31):
-      [t_fused_3_0] linear_out         producer=n_fused_3      dtype=float32
-      [t_fused_4_0] linear_out         producer=n_fused_4      dtype=float32
-      [t15] x                  producer=<input>        dtype=float32
-      [t16] fc1.weight         producer=<input>        dtype=float32
-      [t17] fc1.bias           producer=<input>        dtype=float32
-      [t18] fc2.weight         producer=<input>        dtype=float32
-      [t19] fc2.bias           producer=<input>        dtype=float32
-      [t20] fc3.weight         producer=<input>        dtype=float32
-      [t22] grad_y             producer=<input>        dtype=float32
-      [t25] y                  producer=n10            dtype=float32
-      [t28] y                  producer=n13            dtype=float32
-      [t31] y                  producer=n16            dtype=float32
-      [t32] y                  producer=n17            dtype=float32
-      [t33] y                  producer=n18            dtype=float32
-      [t34] y                  producer=n19            dtype=float32
-      [t35] y                  producer=n20            dtype=float32
-      [t36] y                  producer=n21            dtype=float32
-      [t37] y                  producer=n22            dtype=float32
-      [t38] y                  producer=n23            dtype=float32
-      [t39] y                  producer=n24            dtype=float32
-      [t40] y                  producer=n25            dtype=float32
-      [t41] y                  producer=n26            dtype=float32
-      [t42] y                  producer=n27            dtype=float32
-      [t43] y                  producer=n28            dtype=float32
-      [t44] y                  producer=n29            dtype=float32
-      [t45] y                  producer=n30            dtype=float32
-      [t46] y                  producer=n31            dtype=float32
-      [t47] y                  producer=n32            dtype=float32
-      [t48] y                  producer=n33            dtype=float32
-      [t51] y                  producer=n36            dtype=float32
-      [t52] y                  producer=n37            dtype=float32
+      [t150] y                  dtype=float32  shape=[128,256]
+      [t146] y                  dtype=float32  shape=[256]
+      [t142] y                  dtype=float32  shape=[256,256]
+      [t138] y                  dtype=float32  shape=[256]
+      [t117] y                  dtype=float32  shape=[256,128]
+      [t113] y                  dtype=float32  shape=[128]
+      [t109] y                  dtype=float32  shape=[128,64]
+      [t105] y                  dtype=float32  shape=[64]
+      [t101] y                  dtype=float32  shape=[64,32]
+      [t97] y                  dtype=float32  shape=[32]
+  ▸ Nodes (59):
+      [n_fused_5] linear            in=[inp_0(t45), fc1.weight(t46), fc1.bias(t47)]
+                                     out=[linear_out(t_fused_5_0)]  {fusedFrom:[t65]}
+      [n29] relu              in=[linear_out(t_fused_5_0)]
+                               out=[y(t66)]
+      [n35] add               in=[const_wxho(t51), const_84sq(t52)]
+                               out=[y(t72)]
+      [n_fused_6] linear            in=[y(t66), fc2.weight(t48), fc2.bias(t49)]
+                                     out=[linear_out(t_fused_6_0)]  {fusedFrom:[t74]}
+      [n_cf_2] const             in=[—]
+                                  out=[y(t76)]  {foldedFrom:"mul"}
+      [n40] sub               in=[y(t76), const_k7n1(t53)]
+                               out=[y(t77)]
+      [n41] sub               in=[y(t76), const_s8bm(t54)]
+                               out=[y(t78)]
+      [n42] add               in=[y(t77), y(t78)]
+                               out=[y(t79)]
+      [n43] add               in=[y(t79), const_2pm6(t55)]
+                               out=[y(t80)]
+      [n44] mul               in=[y(t80), const_qiid(t56)]
+                               out=[y(t81)]
+      [n_fused_7] linear            in=[y(t81), fc3.weight(t57), fc3.bias(t58)]
+                                     out=[linear_out(t_fused_7_0)]  {fusedFrom:[t83]}
+      [n47] relu              in=[linear_out(t_fused_7_0)]
+                               out=[y(t84)]
+      [n_fused_8] linear            in=[y(t84), fc4.weight(t59), fc4.bias(t60)]
+                                     out=[linear_out(t_fused_8_0)]  {fusedFrom:[t86]}
+      [n50] relu              in=[linear_out(t_fused_8_0)]
+                               out=[y(t87)]
+      [n_fused_9] linear            in=[y(t87), fc5.weight(t61), fc5.bias(t62)]
+                                     out=[linear_out(t_fused_9_0)]  {fusedFrom:[t89]}
+      [n53] softmax           in=[linear_out(t_fused_9_0)]
+                               out=[y(t90)]
+      [n55] mul               in=[grad_y(t63), y(t90)]
+                               out=[y(t92)]
+      [n56] sum               in=[y(t92)]
+                               out=[y(t93)]  {axes:[1], keepDims:true}
+      [n57] sub               in=[grad_y(t63), y(t93)]
+                               out=[y(t94)]
+      [n58] mul               in=[y(t90), y(t94)]
+                               out=[y(t95)]
+      [n59] sum               in=[y(t95)]
+                               out=[y(t96)]  {axes:[0], keepDims:true}
+      [n60] reshape           in=[y(t96)]
+                               out=[y(t97)]  {shape:[32]}
+      [n61] transpose         in=[fc5.weight(t61)]
+                               out=[y(t98)]
+      [n62] matmul            in=[y(t95), y(t98)]
+                               out=[y(t99)]
+      [n63] transpose         in=[y(t87)]
+                               out=[y(t100)]
+      [n64] matmul            in=[y(t100), y(t95)]
+                               out=[y(t101)]
+      [n65] step              in=[linear_out(t_fused_8_0)]
+                               out=[y(t102)]
+      [n66] mul               in=[y(t99), y(t102)]
+                               out=[y(t103)]
+      [n67] sum               in=[y(t103)]
+                               out=[y(t104)]  {axes:[0], keepDims:true}
+      [n68] reshape           in=[y(t104)]
+                               out=[y(t105)]  {shape:[64]}
+      [n69] transpose         in=[fc4.weight(t59)]
+                               out=[y(t106)]
+      [n70] matmul            in=[y(t103), y(t106)]
+                               out=[y(t107)]
+      [n71] transpose         in=[y(t84)]
+                               out=[y(t108)]
+      [n72] matmul            in=[y(t108), y(t103)]
+                               out=[y(t109)]
+      [n73] step              in=[linear_out(t_fused_7_0)]
+                               out=[y(t110)]
+      [n74] mul               in=[y(t107), y(t110)]
+                               out=[y(t111)]
+      [n75] sum               in=[y(t111)]
+                               out=[y(t112)]  {axes:[0], keepDims:true}
+      [n76] reshape           in=[y(t112)]
+                               out=[y(t113)]  {shape:[128]}
+      [n77] transpose         in=[fc3.weight(t57)]
+                               out=[y(t114)]
+      [n78] matmul            in=[y(t111), y(t114)]
+                               out=[y(t115)]
+      [n79] transpose         in=[y(t81)]
+                               out=[y(t116)]
+      [n80] matmul            in=[y(t116), y(t111)]
+                               out=[y(t117)]
+      [n81] mul               in=[y(t115), const_qiid(t56)]
+                               out=[y(t118)]
+      [n93] add               in=[y(t118), y(t118)]
+                               out=[y(t130)]
+      [n94] mul               in=[y(t130), y(t72)]
+                               out=[y(t131)]
+      [n98] step              in=[linear_out(t_fused_6_0)]
+                               out=[y(t135)]
+      [n99] mul               in=[y(t131), y(t135)]
+                               out=[y(t136)]
+      [n100] sum               in=[y(t136)]
+                                out=[y(t137)]  {axes:[0], keepDims:true}
+      [n101] reshape           in=[y(t137)]
+                                out=[y(t138)]  {shape:[256]}
+      [n102] transpose         in=[fc2.weight(t48)]
+                                out=[y(t139)]
+      [n103] matmul            in=[y(t136), y(t139)]
+                                out=[y(t140)]
+      [n104] transpose         in=[y(t66)]
+                                out=[y(t141)]
+      [n105] matmul            in=[y(t141), y(t136)]
+                                out=[y(t142)]
+      [n106] step              in=[linear_out(t_fused_5_0)]
+                                out=[y(t143)]
+      [n107] mul               in=[y(t140), y(t143)]
+                                out=[y(t144)]
+      [n108] sum               in=[y(t144)]
+                                out=[y(t145)]  {axes:[0], keepDims:true}
+      [n109] reshape           in=[y(t145)]
+                                out=[y(t146)]  {shape:[256]}
+      [n112] transpose         in=[inp_0(t45)]
+                                out=[y(t149)]
+      [n113] matmul            in=[y(t149), y(t144)]
+                                out=[y(t150)]
+  ▸ Tensors (77):
+      [t_fused_5_0] linear_out         producer=n_fused_5      dtype=float32
+      [t_fused_6_0] linear_out         producer=n_fused_6      dtype=float32
+      [t_fused_7_0] linear_out         producer=n_fused_7      dtype=float32
+      [t_fused_8_0] linear_out         producer=n_fused_8      dtype=float32
+      [t_fused_9_0] linear_out         producer=n_fused_9      dtype=float32
+      [t100] y                  producer=n63            dtype=float32
+      [t101] y                  producer=n64            dtype=float32
+      [t102] y                  producer=n65            dtype=float32
+      [t103] y                  producer=n66            dtype=float32
+      [t104] y                  producer=n67            dtype=float32
+      [t105] y                  producer=n68            dtype=float32
+      [t106] y                  producer=n69            dtype=float32
+      [t107] y                  producer=n70            dtype=float32
+      [t108] y                  producer=n71            dtype=float32
+      [t109] y                  producer=n72            dtype=float32
+      [t110] y                  producer=n73            dtype=float32
+      [t111] y                  producer=n74            dtype=float32
+      [t112] y                  producer=n75            dtype=float32
+      [t113] y                  producer=n76            dtype=float32
+      [t114] y                  producer=n77            dtype=float32
+      [t115] y                  producer=n78            dtype=float32
+      [t116] y                  producer=n79            dtype=float32
+      [t117] y                  producer=n80            dtype=float32
+      [t118] y                  producer=n81            dtype=float32
+      [t130] y                  producer=n93            dtype=float32
+      [t131] y                  producer=n94            dtype=float32
+      [t135] y                  producer=n98            dtype=float32
+      [t136] y                  producer=n99            dtype=float32
+      [t137] y                  producer=n100           dtype=float32
+      [t138] y                  producer=n101           dtype=float32
+      [t139] y                  producer=n102           dtype=float32
+      [t140] y                  producer=n103           dtype=float32
+      [t141] y                  producer=n104           dtype=float32
+      [t142] y                  producer=n105           dtype=float32
+      [t143] y                  producer=n106           dtype=float32
+      [t144] y                  producer=n107           dtype=float32
+      [t145] y                  producer=n108           dtype=float32
+      [t146] y                  producer=n109           dtype=float32
+      [t149] y                  producer=n112           dtype=float32
+      [t150] y                  producer=n113           dtype=float32
+      [t45] inp_0              producer=<input>        dtype=float32
+      [t46] fc1.weight         producer=<input>        dtype=float32
+      [t47] fc1.bias           producer=<input>        dtype=float32
+      [t48] fc2.weight         producer=<input>        dtype=float32
+      [t49] fc2.bias           producer=<input>        dtype=float32
+      [t51] const_wxho         producer=<input>        dtype=float32
+      [t52] const_84sq         producer=<input>        dtype=float32
+      [t53] const_k7n1         producer=<input>        dtype=float32
+      [t54] const_s8bm         producer=<input>        dtype=float32
+      [t55] const_2pm6         producer=<input>        dtype=float32
+      [t56] const_qiid         producer=<input>        dtype=float32
+      [t57] fc3.weight         producer=<input>        dtype=float32
+      [t58] fc3.bias           producer=<input>        dtype=float32
+      [t59] fc4.weight         producer=<input>        dtype=float32
+      [t60] fc4.bias           producer=<input>        dtype=float32
+      [t61] fc5.weight         producer=<input>        dtype=float32
+      [t62] fc5.bias           producer=<input>        dtype=float32
+      [t63] grad_y             producer=<input>        dtype=float32
+      [t66] y                  producer=n29            dtype=float32
+      [t72] y                  producer=n35            dtype=float32
+      [t76] y                  producer=n_cf_2         dtype=float32
+      [t77] y                  producer=n40            dtype=float32
+      [t78] y                  producer=n41            dtype=float32
+      [t79] y                  producer=n42            dtype=float32
+      [t80] y                  producer=n43            dtype=float32
+      [t81] y                  producer=n44            dtype=float32
+      [t84] y                  producer=n47            dtype=float32
+      [t87] y                  producer=n50            dtype=float32
+      [t90] y                  producer=n53            dtype=float32
+      [t92] y                  producer=n55            dtype=float32
+      [t93] y                  producer=n56            dtype=float32
+      [t94] y                  producer=n57            dtype=float32
+      [t95] y                  producer=n58            dtype=float32
+      [t96] y                  producer=n59            dtype=float32
+      [t97] y                  producer=n60            dtype=float32
+      [t98] y                  producer=n61            dtype=float32
+      [t99] y                  producer=n62            dtype=float32
 ──────────────────────────────────────────────────────────────
 
 
 ······························································
   Diff after backward full pipeline diff
 ······························································
-  Nodes  : 30 → 24  (-6 ✓)
-  Tensors: 38    → 31     (-7 ✓)
-  Removed: n8(matmul), n9(add), n11(matmul), n12(add), n14(matmul), n15(add), n34(transpose), n35(matmul)
-  Added  : n_fused_3(linear), n_fused_4(linear)
+  Nodes  : 87 → 59  (-28 ✓)
+  Tensors: 106    → 77     (-29 ✓)
+  Removed: n27(matmul), n28(add), n30(matmul), n31(add), n32(matmul), n33(add), n34(mul), n36(matmul), n37(add), n38(relu), n39(mul), n45(matmul), n46(add), n48(matmul), n49(add), n51(matmul), n52(add), n54(softmax), n82(mul), n83(sum), n84(reshape), n85(sum), n86(reshape), n87(neg), n88(sum), n89(reshape), n90(neg), n91(sum), n92(reshape), n95(mul), n96(sum), n97(reshape), n110(transpose), n111(matmul)
+  Added  : n_fused_5(linear), n_fused_6(linear), n_cf_2(const), n_fused_7(linear), n_fused_8(linear), n_fused_9(linear)
 ······························································
 
 
 ──────────────────────────────────────────────────────────────
-  Loop IR — backward
-  Loop IR Module : backward_opt_opt  (6 functions)
+  Loop IR (Optimised) — backward
+  Loop IR Module : backward_opt_opt_opt_opt  (10 functions)
 ──────────────────────────────────────────────────────────────
-  ▸ fn compute_y_t52  [in: x(32×128), fc1.weight(128×256), fc1.bias(256), fc2.weight(256×128), fc2.bias(128), fc3.weight(128×32), grad_y(32×32)]  [out: y(128×256)]  [temps: linear_out(32×256), y(32×256), linear_out(32×128), y(32×128), y(32×128), y(32×128), y(32×128), y(128×256), y(32×256), y(32×256), y(32×256), y(128×32)]
-    for i in [0, 32):
+  ▸ fn compute_y_t150  [in: inp_0(128×128), fc1.weight(128×256), fc1.bias(256), const_wxho(), const_84sq(), fc2.weight(256×256), fc2.bias(256), const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32), grad_y(128×32)]  [out: y(128×256)]  [temps: linear_out(128×256), y(128×256), y(), linear_out(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_out(128×128), y(128×128), linear_out(128×64), y(128×64), linear_out(128×32), y(128×32), y(128×32), y(128×1), y(128×32), y(128×32), y(32×64), y(128×64), y(128×64), y(128×64), y(64×128), y(128×128), y(128×128), y(128×128), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(256×256), y(128×256), y(128×256), y(128×256), y(128×128)]
+    for i in [0, 128):
       for j in [0, 256):
         linear_out[i, j] = fc1.bias[j]
         for k in [0, 128):
-          linear_out[i, j] += (x[i, k] * fc1.weight[k, j])
-    for i0 in [0, 32):
+          linear_out[i, j] += (inp_0[i, k] * fc1.weight[k, j])
+    for i0 in [0, 128):
       for i1 in [0, 256):
         y[i0, i1] = max(0.0, linear_out[i0, i1])
-    for i in [0, 32):
-      for j in [0, 128):
+    y[] = (const_wxho[] + const_84sq[])
+    for i in [0, 128):
+      for j in [0, 256):
         linear_out[i, j] = fc2.bias[j]
         for k in [0, 256):
           linear_out[i, j] += (y[i, k] * fc2.weight[k, j])
-    for i0 in [0, 32):
-      for i1 in [0, 128):
-        y[i0, i1] = fc3.weight[i1, i0]
-    for i in [0, 32):
-      for j in [0, 128):
-        y[i, j] = 0.0
-        for k in [0, 32):
-          y[i, j] += (grad_y[i, k] * y[k, j])
-    for i0 in [0, 32):
-      for i1 in [0, 128):
-        y[i0, i1] = step(linear_out[i0, i1])
-    for i0 in [0, 32):
-      for i1 in [0, 128):
-        y[i0, i1] = (y[i0, i1] * y[i0, i1])
     for i0 in [0, 128):
       for i1 in [0, 256):
-        y[i0, i1] = fc2.weight[i1, i0]
-    for i in [0, 32):
-      for j in [0, 256):
-        y[i, j] = 0.0
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
+      for j in [0, 128):
+        linear_out[i, j] = fc3.bias[j]
+        for k in [0, 256):
+          linear_out[i, j] += (y[i, k] * fc3.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_out[i, j] = fc4.bias[j]
         for k in [0, 128):
-          y[i, j] += (y[i, k] * y[k, j])
-    for i0 in [0, 32):
-      for i1 in [0, 256):
-        y[i0, i1] = step(linear_out[i0, i1])
-    for i0 in [0, 32):
-      for i1 in [0, 256):
-        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+          linear_out[i, j] += (y[i, k] * fc4.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (y[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
     for i0 in [0, 128):
       for i1 in [0, 32):
-        y[i0, i1] = x[i1, i0]
+        y[i0, i1] = (grad_y[i0, i1] * y[i0, i1])
+    for r0 in [0, 128):
+      y[r0, 0] = 0.0
+      for k1 in [0, 32):
+        y[r0, 0] += y[r0, k1]
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] - y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 32):
+      for i1 in [0, 64):
+        y[i0, i1] = fc5.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 64):
+        y[i, j] = 0.0
+        for k in [0, 32):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 64):
+      for i1 in [0, 128):
+        y[i0, i1] = fc4.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 128):
+        y[i, j] = 0.0
+        for k in [0, 64):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = fc3.weight[i1, i0]
     for i in [0, 128):
       for j in [0, 256):
         y[i, j] = 0.0
-        for k in [0, 32):
+        for k in [0, 128):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 256):
+      for i1 in [0, 256):
+        y[i0, i1] = fc2.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 256):
+        y[i, j] = 0.0
+        for k in [0, 256):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = inp_0[i1, i0]
+    for i in [0, 128):
+      for j in [0, 256):
+        y[i, j] = 0.0
+        for k in [0, 128):
           y[i, j] += (y[i, k] * y[k, j])
 ······························································
-  ▸ fn compute_y_t48  [in: x(32×128), fc1.weight(128×256), fc1.bias(256), fc2.weight(256×128), fc2.bias(128), fc3.weight(128×32), grad_y(32×32)]  [out: y(256)]  [temps: linear_out(32×256), y(32×256), linear_out(32×128), y(32×128), y(32×128), y(32×128), y(32×128), y(128×256), y(32×256), y(32×256), y(32×256), y(1×256)]
-    for i in [0, 32):
+  ▸ fn compute_y_t146  [in: inp_0(128×128), fc1.weight(128×256), fc1.bias(256), const_wxho(), const_84sq(), fc2.weight(256×256), fc2.bias(256), const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32), grad_y(128×32)]  [out: y(256)]  [temps: linear_out(128×256), y(128×256), y(), linear_out(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_out(128×128), y(128×128), linear_out(128×64), y(128×64), linear_out(128×32), y(128×32), y(128×32), y(128×1), y(128×32), y(128×32), y(32×64), y(128×64), y(128×64), y(128×64), y(64×128), y(128×128), y(128×128), y(128×128), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(256×256), y(128×256), y(128×256), y(128×256), y(1×256)]
+    for i in [0, 128):
       for j in [0, 256):
         linear_out[i, j] = fc1.bias[j]
         for k in [0, 128):
-          linear_out[i, j] += (x[i, k] * fc1.weight[k, j])
-    for i0 in [0, 32):
+          linear_out[i, j] += (inp_0[i, k] * fc1.weight[k, j])
+    for i0 in [0, 128):
       for i1 in [0, 256):
         y[i0, i1] = max(0.0, linear_out[i0, i1])
-    for i in [0, 32):
-      for j in [0, 128):
+    y[] = (const_wxho[] + const_84sq[])
+    for i in [0, 128):
+      for j in [0, 256):
         linear_out[i, j] = fc2.bias[j]
         for k in [0, 256):
           linear_out[i, j] += (y[i, k] * fc2.weight[k, j])
-    for i0 in [0, 32):
-      for i1 in [0, 128):
-        y[i0, i1] = fc3.weight[i1, i0]
-    for i in [0, 32):
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
       for j in [0, 128):
+        linear_out[i, j] = fc3.bias[j]
+        for k in [0, 256):
+          linear_out[i, j] += (y[i, k] * fc3.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_out[i, j] = fc4.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (y[i, k] * fc4.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (y[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] * y[i0, i1])
+    for r0 in [0, 128):
+      y[r0, 0] = 0.0
+      for k1 in [0, 32):
+        y[r0, 0] += y[r0, k1]
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] - y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 32):
+      for i1 in [0, 64):
+        y[i0, i1] = fc5.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 64):
         y[i, j] = 0.0
         for k in [0, 32):
-          y[i, j] += (grad_y[i, k] * y[k, j])
-    for i0 in [0, 32):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 64):
+      for i1 in [0, 128):
+        y[i0, i1] = fc4.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 128):
+        y[i, j] = 0.0
+        for k in [0, 64):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
       for i1 in [0, 128):
         y[i0, i1] = step(linear_out[i0, i1])
-    for i0 in [0, 32):
+    for i0 in [0, 128):
       for i1 in [0, 128):
         y[i0, i1] = (y[i0, i1] * y[i0, i1])
     for i0 in [0, 128):
       for i1 in [0, 256):
-        y[i0, i1] = fc2.weight[i1, i0]
-    for i in [0, 32):
+        y[i0, i1] = fc3.weight[i1, i0]
+    for i in [0, 128):
       for j in [0, 256):
         y[i, j] = 0.0
         for k in [0, 128):
           y[i, j] += (y[i, k] * y[k, j])
-    for i0 in [0, 32):
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 128):
       for i1 in [0, 256):
         y[i0, i1] = step(linear_out[i0, i1])
-    for i0 in [0, 32):
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 256):
+      for i1 in [0, 256):
+        y[i0, i1] = fc2.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 256):
+        y[i, j] = 0.0
+        for k in [0, 256):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
       for i1 in [0, 256):
         y[i0, i1] = (y[i0, i1] * y[i0, i1])
     for r1 in [0, 256):
       y[0, r1] = 0.0
-      for k0 in [0, 32):
+      for k0 in [0, 128):
         y[0, r1] += y[k0, r1]
     for i0 in [0, 256):
       y[i0] = y[mod((i0 / 256), 1), mod(i0, 256)]
 ······························································
-  ▸ fn compute_y_t44  [in: x(32×128), fc1.weight(128×256), fc1.bias(256), fc2.weight(256×128), fc2.bias(128), fc3.weight(128×32), grad_y(32×32)]  [out: y(256×128)]  [temps: linear_out(32×256), y(32×256), linear_out(32×128), y(32×128), y(32×128), y(32×128), y(32×128), y(256×32)]
-    for i in [0, 32):
+  ▸ fn compute_y_t142  [in: inp_0(128×128), fc1.weight(128×256), fc1.bias(256), const_wxho(), const_84sq(), fc2.weight(256×256), fc2.bias(256), const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32), grad_y(128×32)]  [out: y(256×256)]  [temps: linear_out(128×256), y(128×256), y(), linear_out(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_out(128×128), y(128×128), linear_out(128×64), y(128×64), linear_out(128×32), y(128×32), y(128×32), y(128×1), y(128×32), y(128×32), y(32×64), y(128×64), y(128×64), y(128×64), y(64×128), y(128×128), y(128×128), y(128×128), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(256×128)]
+    for i in [0, 128):
       for j in [0, 256):
         linear_out[i, j] = fc1.bias[j]
         for k in [0, 128):
-          linear_out[i, j] += (x[i, k] * fc1.weight[k, j])
-    for i0 in [0, 32):
+          linear_out[i, j] += (inp_0[i, k] * fc1.weight[k, j])
+    for i0 in [0, 128):
       for i1 in [0, 256):
         y[i0, i1] = max(0.0, linear_out[i0, i1])
-    for i in [0, 32):
-      for j in [0, 128):
+    y[] = (const_wxho[] + const_84sq[])
+    for i in [0, 128):
+      for j in [0, 256):
         linear_out[i, j] = fc2.bias[j]
         for k in [0, 256):
           linear_out[i, j] += (y[i, k] * fc2.weight[k, j])
-    for i0 in [0, 32):
-      for i1 in [0, 128):
-        y[i0, i1] = fc3.weight[i1, i0]
-    for i in [0, 32):
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
       for j in [0, 128):
+        linear_out[i, j] = fc3.bias[j]
+        for k in [0, 256):
+          linear_out[i, j] += (y[i, k] * fc3.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_out[i, j] = fc4.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (y[i, k] * fc4.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (y[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] * y[i0, i1])
+    for r0 in [0, 128):
+      y[r0, 0] = 0.0
+      for k1 in [0, 32):
+        y[r0, 0] += y[r0, k1]
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] - y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 32):
+      for i1 in [0, 64):
+        y[i0, i1] = fc5.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 64):
         y[i, j] = 0.0
         for k in [0, 32):
-          y[i, j] += (grad_y[i, k] * y[k, j])
-    for i0 in [0, 32):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 64):
+      for i1 in [0, 128):
+        y[i0, i1] = fc4.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 128):
+        y[i, j] = 0.0
+        for k in [0, 64):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
       for i1 in [0, 128):
         y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = fc3.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 256):
+        y[i, j] = 0.0
+        for k in [0, 128):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 256):
+      for i1 in [0, 128):
+        y[i0, i1] = y[i1, i0]
+    for i in [0, 256):
+      for j in [0, 256):
+        y[i, j] = 0.0
+        for k in [0, 128):
+          y[i, j] += (y[i, k] * y[k, j])
+······························································
+  ▸ fn compute_y_t138  [in: inp_0(128×128), fc1.weight(128×256), fc1.bias(256), const_wxho(), const_84sq(), fc2.weight(256×256), fc2.bias(256), const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32), grad_y(128×32)]  [out: y(256)]  [temps: linear_out(128×256), y(128×256), y(), linear_out(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_out(128×128), y(128×128), linear_out(128×64), y(128×64), linear_out(128×32), y(128×32), y(128×32), y(128×1), y(128×32), y(128×32), y(32×64), y(128×64), y(128×64), y(128×64), y(64×128), y(128×128), y(128×128), y(128×128), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(1×256)]
+    for i in [0, 128):
+      for j in [0, 256):
+        linear_out[i, j] = fc1.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (inp_0[i, k] * fc1.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    y[] = (const_wxho[] + const_84sq[])
+    for i in [0, 128):
+      for j in [0, 256):
+        linear_out[i, j] = fc2.bias[j]
+        for k in [0, 256):
+          linear_out[i, j] += (y[i, k] * fc2.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
+      for j in [0, 128):
+        linear_out[i, j] = fc3.bias[j]
+        for k in [0, 256):
+          linear_out[i, j] += (y[i, k] * fc3.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_out[i, j] = fc4.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (y[i, k] * fc4.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (y[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] * y[i0, i1])
+    for r0 in [0, 128):
+      y[r0, 0] = 0.0
+      for k1 in [0, 32):
+        y[r0, 0] += y[r0, k1]
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] - y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
     for i0 in [0, 32):
+      for i1 in [0, 64):
+        y[i0, i1] = fc5.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 64):
+        y[i, j] = 0.0
+        for k in [0, 32):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 64):
+      for i1 in [0, 128):
+        y[i0, i1] = fc4.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 128):
+        y[i, j] = 0.0
+        for k in [0, 64):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = fc3.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 256):
+        y[i, j] = 0.0
+        for k in [0, 128):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for r1 in [0, 256):
+      y[0, r1] = 0.0
+      for k0 in [0, 128):
+        y[0, r1] += y[k0, r1]
+    for i0 in [0, 256):
+      y[i0] = y[mod((i0 / 256), 1), mod(i0, 256)]
+······························································
+  ▸ fn compute_y_t117  [in: const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32), grad_y(128×32)]  [out: y(256×128)]  [temps: y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_out(128×128), y(128×128), linear_out(128×64), y(128×64), linear_out(128×32), y(128×32), y(128×32), y(128×1), y(128×32), y(128×32), y(32×64), y(128×64), y(128×64), y(128×64), y(64×128), y(128×128), y(128×128), y(128×128), y(256×128)]
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
+      for j in [0, 128):
+        linear_out[i, j] = fc3.bias[j]
+        for k in [0, 256):
+          linear_out[i, j] += (y[i, k] * fc3.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_out[i, j] = fc4.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (y[i, k] * fc4.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (y[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] * y[i0, i1])
+    for r0 in [0, 128):
+      y[r0, 0] = 0.0
+      for k1 in [0, 32):
+        y[r0, 0] += y[r0, k1]
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] - y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 32):
+      for i1 in [0, 64):
+        y[i0, i1] = fc5.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 64):
+        y[i, j] = 0.0
+        for k in [0, 32):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 64):
+      for i1 in [0, 128):
+        y[i0, i1] = fc4.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 128):
+        y[i, j] = 0.0
+        for k in [0, 64):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
       for i1 in [0, 128):
         y[i0, i1] = (y[i0, i1] * y[i0, i1])
     for i0 in [0, 256):
-      for i1 in [0, 32):
+      for i1 in [0, 128):
         y[i0, i1] = y[i1, i0]
     for i in [0, 256):
       for j in [0, 128):
         y[i, j] = 0.0
-        for k in [0, 32):
+        for k in [0, 128):
           y[i, j] += (y[i, k] * y[k, j])
 ······························································
-  ▸ fn compute_y_t40  [in: x(32×128), fc1.weight(128×256), fc1.bias(256), fc2.weight(256×128), fc2.bias(128), fc3.weight(128×32), grad_y(32×32)]  [out: y(128)]  [temps: linear_out(32×256), y(32×256), linear_out(32×128), y(32×128), y(32×128), y(32×128), y(32×128), y(1×128)]
-    for i in [0, 32):
-      for j in [0, 256):
-        linear_out[i, j] = fc1.bias[j]
-        for k in [0, 128):
-          linear_out[i, j] += (x[i, k] * fc1.weight[k, j])
-    for i0 in [0, 32):
+  ▸ fn compute_y_t113  [in: const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32), grad_y(128×32)]  [out: y(128)]  [temps: y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_out(128×128), y(128×128), linear_out(128×64), y(128×64), linear_out(128×32), y(128×32), y(128×32), y(128×1), y(128×32), y(128×32), y(32×64), y(128×64), y(128×64), y(128×64), y(64×128), y(128×128), y(128×128), y(128×128), y(1×128)]
+    for i0 in [0, 128):
       for i1 in [0, 256):
-        y[i0, i1] = max(0.0, linear_out[i0, i1])
-    for i in [0, 32):
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
       for j in [0, 128):
-        linear_out[i, j] = fc2.bias[j]
+        linear_out[i, j] = fc3.bias[j]
         for k in [0, 256):
-          linear_out[i, j] += (y[i, k] * fc2.weight[k, j])
-    for i0 in [0, 32):
+          linear_out[i, j] += (y[i, k] * fc3.weight[k, j])
+    for i0 in [0, 128):
       for i1 in [0, 128):
-        y[i0, i1] = fc3.weight[i1, i0]
-    for i in [0, 32):
-      for j in [0, 128):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_out[i, j] = fc4.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (y[i, k] * fc4.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (y[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] * y[i0, i1])
+    for r0 in [0, 128):
+      y[r0, 0] = 0.0
+      for k1 in [0, 32):
+        y[r0, 0] += y[r0, k1]
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] - y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 32):
+      for i1 in [0, 64):
+        y[i0, i1] = fc5.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 64):
         y[i, j] = 0.0
         for k in [0, 32):
-          y[i, j] += (grad_y[i, k] * y[k, j])
-    for i0 in [0, 32):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 64):
+      for i1 in [0, 128):
+        y[i0, i1] = fc4.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 128):
+        y[i, j] = 0.0
+        for k in [0, 64):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
       for i1 in [0, 128):
         y[i0, i1] = step(linear_out[i0, i1])
-    for i0 in [0, 32):
+    for i0 in [0, 128):
       for i1 in [0, 128):
         y[i0, i1] = (y[i0, i1] * y[i0, i1])
     for r1 in [0, 128):
       y[0, r1] = 0.0
-      for k0 in [0, 32):
+      for k0 in [0, 128):
         y[0, r1] += y[k0, r1]
     for i0 in [0, 128):
       y[i0] = y[mod((i0 / 128), 1), mod(i0, 128)]
 ······························································
-  ▸ fn compute_y_t36  [in: x(32×128), fc1.weight(128×256), fc1.bias(256), fc2.weight(256×128), fc2.bias(128), grad_y(32×32)]  [out: y(128×32)]  [temps: linear_out(32×256), y(32×256), linear_out(32×128), y(32×128), y(128×32)]
-    for i in [0, 32):
-      for j in [0, 256):
-        linear_out[i, j] = fc1.bias[j]
-        for k in [0, 128):
-          linear_out[i, j] += (x[i, k] * fc1.weight[k, j])
-    for i0 in [0, 32):
+  ▸ fn compute_y_t109  [in: const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32), grad_y(128×32)]  [out: y(128×64)]  [temps: y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_out(128×128), y(128×128), linear_out(128×64), y(128×64), linear_out(128×32), y(128×32), y(128×32), y(128×1), y(128×32), y(128×32), y(32×64), y(128×64), y(128×64), y(128×64), y(128×128)]
+    for i0 in [0, 128):
       for i1 in [0, 256):
-        y[i0, i1] = max(0.0, linear_out[i0, i1])
-    for i in [0, 32):
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
       for j in [0, 128):
-        linear_out[i, j] = fc2.bias[j]
+        linear_out[i, j] = fc3.bias[j]
         for k in [0, 256):
-          linear_out[i, j] += (y[i, k] * fc2.weight[k, j])
-    for i0 in [0, 32):
+          linear_out[i, j] += (y[i, k] * fc3.weight[k, j])
+    for i0 in [0, 128):
       for i1 in [0, 128):
         y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_out[i, j] = fc4.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (y[i, k] * fc4.weight[k, j])
     for i0 in [0, 128):
-      for i1 in [0, 32):
-        y[i0, i1] = y[i1, i0]
+      for i1 in [0, 64):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
     for i in [0, 128):
       for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (y[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] * y[i0, i1])
+    for r0 in [0, 128):
+      y[r0, 0] = 0.0
+      for k1 in [0, 32):
+        y[r0, 0] += y[r0, k1]
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] - y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 32):
+      for i1 in [0, 64):
+        y[i0, i1] = fc5.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 64):
         y[i, j] = 0.0
         for k in [0, 32):
-          y[i, j] += (y[i, k] * grad_y[k, j])
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = y[i1, i0]
+    for i in [0, 128):
+      for j in [0, 64):
+        y[i, j] = 0.0
+        for k in [0, 128):
+          y[i, j] += (y[i, k] * y[k, j])
 ······························································
-  ▸ fn compute_y_t32  [in: grad_y(32×32)]  [out: y(32)]  [temps: y(1×32)]
+  ▸ fn compute_y_t105  [in: const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32), grad_y(128×32)]  [out: y(64)]  [temps: y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_out(128×128), y(128×128), linear_out(128×64), y(128×64), linear_out(128×32), y(128×32), y(128×32), y(128×1), y(128×32), y(128×32), y(32×64), y(128×64), y(128×64), y(128×64), y(1×64)]
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
+      for j in [0, 128):
+        linear_out[i, j] = fc3.bias[j]
+        for k in [0, 256):
+          linear_out[i, j] += (y[i, k] * fc3.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_out[i, j] = fc4.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (y[i, k] * fc4.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (y[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] * y[i0, i1])
+    for r0 in [0, 128):
+      y[r0, 0] = 0.0
+      for k1 in [0, 32):
+        y[r0, 0] += y[r0, k1]
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] - y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 32):
+      for i1 in [0, 64):
+        y[i0, i1] = fc5.weight[i1, i0]
+    for i in [0, 128):
+      for j in [0, 64):
+        y[i, j] = 0.0
+        for k in [0, 32):
+          y[i, j] += (y[i, k] * y[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = step(linear_out[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for r1 in [0, 64):
+      y[0, r1] = 0.0
+      for k0 in [0, 128):
+        y[0, r1] += y[k0, r1]
+    for i0 in [0, 64):
+      y[i0] = y[mod((i0 / 64), 1), mod(i0, 64)]
+······························································
+  ▸ fn compute_y_t101  [in: const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32), grad_y(128×32)]  [out: y(64×32)]  [temps: y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_out(128×128), y(128×128), linear_out(128×64), y(128×64), linear_out(128×32), y(128×32), y(128×32), y(128×1), y(128×32), y(128×32), y(64×128)]
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
+      for j in [0, 128):
+        linear_out[i, j] = fc3.bias[j]
+        for k in [0, 256):
+          linear_out[i, j] += (y[i, k] * fc3.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_out[i, j] = fc4.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (y[i, k] * fc4.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (y[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] * y[i0, i1])
+    for r0 in [0, 128):
+      y[r0, 0] = 0.0
+      for k1 in [0, 32):
+        y[r0, 0] += y[r0, k1]
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] - y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
+    for i0 in [0, 64):
+      for i1 in [0, 128):
+        y[i0, i1] = y[i1, i0]
+    for i in [0, 64):
+      for j in [0, 32):
+        y[i, j] = 0.0
+        for k in [0, 128):
+          y[i, j] += (y[i, k] * y[k, j])
+······························································
+  ▸ fn compute_y_t97  [in: const_k7n1(), const_s8bm(), const_2pm6(), const_qiid(), fc3.weight(256×128), fc3.bias(128), fc4.weight(128×64), fc4.bias(64), fc5.weight(64×32), fc5.bias(32), grad_y(128×32)]  [out: y(32)]  [temps: y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), y(128×256), linear_out(128×128), y(128×128), linear_out(128×64), y(128×64), linear_out(128×32), y(128×32), y(128×32), y(128×1), y(128×32), y(128×32), y(1×32)]
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_k7n1[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] - const_s8bm[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] + const_2pm6[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 256):
+        y[i0, i1] = (y[i0, i1] * const_qiid[i0, i1])
+    for i in [0, 128):
+      for j in [0, 128):
+        linear_out[i, j] = fc3.bias[j]
+        for k in [0, 256):
+          linear_out[i, j] += (y[i, k] * fc3.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 128):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 64):
+        linear_out[i, j] = fc4.bias[j]
+        for k in [0, 128):
+          linear_out[i, j] += (y[i, k] * fc4.weight[k, j])
+    for i0 in [0, 128):
+      for i1 in [0, 64):
+        y[i0, i1] = max(0.0, linear_out[i0, i1])
+    for i in [0, 128):
+      for j in [0, 32):
+        linear_out[i, j] = fc5.bias[j]
+        for k in [0, 64):
+          linear_out[i, j] += (y[i, k] * fc5.weight[k, j])
+    for i in [0, 128):
+      _smax[i] = linear_out[i, 0]
+      _ssum[i] = 0.0
+      for j in [1, 32):
+        _smax[i] = max(_smax[i], linear_out[i, j])
+      for j in [0, 32):
+        y[i, j] = exp((linear_out[i, j] - _smax[i]))
+        _ssum[i] = (_ssum[i] + y[i, j])
+      for j in [0, 32):
+        y[i, j] = (y[i, j] / _ssum[i])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] * y[i0, i1])
+    for r0 in [0, 128):
+      y[r0, 0] = 0.0
+      for k1 in [0, 32):
+        y[r0, 0] += y[r0, k1]
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (grad_y[i0, i1] - y[i0, i1])
+    for i0 in [0, 128):
+      for i1 in [0, 32):
+        y[i0, i1] = (y[i0, i1] * y[i0, i1])
     for r1 in [0, 32):
       y[0, r1] = 0.0
-      for k0 in [0, 32):
-        y[0, r1] += grad_y[k0, r1]
+      for k0 in [0, 128):
+        y[0, r1] += y[k0, r1]
     for i0 in [0, 32):
       y[i0] = y[mod((i0 / 32), 1), mod(i0, 32)]
 ······························································
+  ▸ Diagnostics:
+      ⚠  Node "n_cf_2" (const): no lowering rule available — skipped.
+      ⚠  Node "n_cf_2" (const): no lowering rule available — skipped.
+      ⚠  Node "n_cf_2" (const): no lowering rule available — skipped.
+      ⚠  Node "n_cf_2" (const): no lowering rule available — skipped.
+      ⚠  Node "n_cf_2" (const): no lowering rule available — skipped.
+      ⚠  Node "n_cf_2" (const): no lowering rule available — skipped.
+      ⚠  Node "n_cf_2" (const): no lowering rule available — skipped.
+      ⚠  Node "n_cf_2" (const): no lowering rule available — skipped.
+      ⚠  Node "n_cf_2" (const): no lowering rule available — skipped.
+      ⚠  Node "n_cf_2" (const): no lowering rule available — skipped.
+······························································
 ──────────────────────────────────────────────────────────────
 
-  Demo complete.
+  Demo complete. Total parameters exported: 17
 

@@ -4,7 +4,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { Module }         from "./module";
-import { SymbolicTensor } from "../tensor/tensor";
+import { SymbolicTensor, Tensor } from "../tensor/tensor";
 
 /**
  * Container that applies modules sequentially: output of each module is the
@@ -30,9 +30,9 @@ export class Sequential extends Module {
     }
   }
 
-  forward(x: SymbolicTensor): SymbolicTensor {
+  forward(x: Tensor): Tensor {
     this._ensureParams();
-    let h: SymbolicTensor = x;
+    let h: Tensor = x;
     for (const layer of this._layers) {
       const out = layer.forward(h);
       h = Array.isArray(out) ? out[0] : out;

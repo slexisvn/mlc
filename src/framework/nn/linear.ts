@@ -5,7 +5,7 @@
 
 import { Module }         from "./module";
 import { initXavier, initZeros, Initialiser } from "./parameter";
-import { SymbolicTensor } from "../tensor/tensor";
+import { SymbolicTensor, Tensor } from "../tensor/tensor";
 import { getActiveBuilder } from "../core/context";
 import { IRDType }        from "../ir/schema";
 
@@ -64,10 +64,10 @@ export class Linear extends Module {
     }
   }
 
-  forward(x: SymbolicTensor): SymbolicTensor {
+  forward(x: Tensor): Tensor {
     this._ensureParams();
     const gb = getActiveBuilder();
-    const [mm] = gb.applyOp("matmul", [x, this._weight!]);
+    const [mm] = gb.applyOp("matmul", [x as SymbolicTensor, this._weight!]);
     if (this._useBias) {
       const [out] = gb.applyOp("add", [mm, this._bias!]);
       return out;

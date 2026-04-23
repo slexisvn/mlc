@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { getActiveBuilder, getActiveParamSink } from "../core/context";
-import { SymbolicTensor }                        from "../tensor/tensor";
+import { SymbolicTensor, Tensor }                from "../tensor/tensor";
 import { IRDType }                               from "../ir/schema";
 import { ShapeExpr }                             from "../core/shape";
 import { Initialiser, initXavier }               from "./parameter";
@@ -109,5 +109,5 @@ export abstract class Module {
 
   // ─── Abstract forward ─────────────────────────────────────────────────────
 
-  abstract forward(...inputs: SymbolicTensor[]): SymbolicTensor | SymbolicTensor[];
+  abstract forward(...inputs: Tensor[]): Tensor | Tensor[];
 }
