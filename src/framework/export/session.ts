@@ -1,36 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//
-// ExportSession — owns a single computation graph and drives model tracing.
-//
-// This is the primary entry point for defining models with the PyTorch-like API.
-//
-// Typical usage:
-// ```ts
-// import * as nn from "./frontend/nn";
-// import * as F  from "./frontend/functional";
-// import { ExportSession, Tensor } from "./frontend/export";
-//
-// class MyModel extends nn.Module {
-//   private fc1 = this.register("fc1", new nn.Linear(784, 256));
-//   private fc2 = this.register("fc2", new nn.Linear(256, 10));
-//
-//   forward(x: Tensor): Tensor {
-//     return F.relu(this.fc1.forward(x))
-//             .pipe(h => this.fc2.forward(h));  // or just two lines
-//   }
-// }
-//
-// const session = new ExportSession({ id: "my_model" });
-// session.build(ctx => {
-//   const x = ctx.input("x", "float32", [32, 784]);
-//   const model = new MyModel();
-//   const logits = model.forward(x);
-//   ctx.markOutput(logits);
-// });
-// const pkg = session.export();
-// ```
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { GraphBuilder, GraphBuilderOptions } from "../core/graphBuilder";
 import { withActiveContext, ParamSpec }      from "../core/context";
 import { SymbolicTensor }                    from "../tensor/tensor";
