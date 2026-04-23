@@ -7,7 +7,7 @@ import { Module } from "../nn/module";
 import { IRPackage } from "../ir/schema";
 import { TensorId } from "../ir/ids";
 import { SymbolicTensor } from "../tensor/tensor";
-import { createDefaultPipeline } from "../../compiler/passes/pipelines";
+import { createFullPipeline } from "../../compiler/passes/pipelines";
 import { printGraph, printDiff } from "../../compiler/debug/printer";
 import { printLoopModule } from "../../compiler/debug/loopPrinter";
 
@@ -118,7 +118,7 @@ function runPipeline(pkg: IRPackage, logPasses: boolean) {
     }
 
     const logs: Array<{ pass: string; level: string; message: string }> = [];
-    const { pm, loopPass } = createDefaultPipeline({
+    const { pm, loopPass, loopPm } = createFullPipeline({
       validateAfterEachPass: true,
       logSink: entry => {
         logs.push({ pass: entry.passName, level: entry.level, message: entry.message });
@@ -138,9 +138,10 @@ function runPipeline(pkg: IRPackage, logPasses: boolean) {
       printDiff(inputGraph, optimisedGraph, `${kind} full pipeline diff`);
 
       const loopModule = loopPass.getLastModule();
-      if (loopModule) {
-        printLoopModule(loopModule, `Loop IR (Optimised) — ${kind}`);
-      }
+      printLoopModule(loopModule!, `Loop IR — ${kind}`);
+
+      const optimizedLoopModule = loopPm.run(loopModule!);
+      printLoopModule(optimizedLoopModule!, `Optimized Loop IR — ${kind}`);
     }
   }
 }
