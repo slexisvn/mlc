@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// utils/toposort.ts
 //
 // Topological sort (Kahn's BFS algorithm) over the node graph.
 //

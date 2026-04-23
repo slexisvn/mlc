@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// patterns/rules.ts
 //
 // Fusion rule registry.
 //
@@ -23,8 +22,11 @@ import { FusionRule } from "../ir/types";
  */
 export const DEFAULT_FUSION_RULES: readonly FusionRule[] = [
   // ── 3-op chains ───────────────────────────────────────────────────────────
-  { pattern: ["conv",   "bn",  "relu"],  fusedOp: "conv_bn_relu"   },
-  { pattern: ["matmul", "add", "relu"],  fusedOp: "linear_relu"    },
+  { pattern: ["conv",   "bn",  "relu"],    fusedOp: "conv_bn_relu"     },
+  { pattern: ["matmul", "add", "relu"],    fusedOp: "linear_relu"      },
+  { pattern: ["matmul", "add", "sigmoid"], fusedOp: "linear_sigmoid"   },
+  { pattern: ["matmul", "add", "tanh"],    fusedOp: "linear_tanh"      },
+  { pattern: ["matmul", "add", "gelu"],    fusedOp: "linear_gelu"      },
 
   // ── 2-op chains ───────────────────────────────────────────────────────────
   { pattern: ["conv",   "relu"],         fusedOp: "conv_relu"      },

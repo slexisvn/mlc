@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// shared-ir/schema.ts
 //
 // Plain-data types that form the stable IR boundary between the framework
 // frontend and the compiler backend.

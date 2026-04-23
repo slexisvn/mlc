@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/csePass.ts
 //
 // Common Subexpression Elimination (CSE) via value numbering on the graph IR.
 //

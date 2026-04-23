@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/passManager.ts
 //
 // Sequential pass pipeline with optional inter-pass graph validation.
 //

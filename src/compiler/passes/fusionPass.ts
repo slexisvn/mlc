@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/fusionPass.ts
 //
 // Operator Fusion Pass — the heart of the compiler.
 //

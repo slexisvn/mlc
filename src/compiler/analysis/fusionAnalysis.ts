@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// analysis/fusionAnalysis.ts
-//
 // Diagnostic-grade fusion analysis.
 //
 // Improvement over running matchChains() directly

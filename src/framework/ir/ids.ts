@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// shared-ir/ids.ts
 //
 // Nominal (branded) ID types for the shared IR boundary.
 //

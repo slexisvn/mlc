@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// frontend/export/session.ts
 //
 // ExportSession — owns a single computation graph and drives model tracing.
 //

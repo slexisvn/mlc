@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// frontend/core/graphBuilder.ts
 //
 // GraphBuilder — central authority for constructing a computation graph.
 // This is an internal class; users should interact via ExportSession.

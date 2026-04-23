@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// optimizer/costModel.ts
-//
 // Simple heuristic cost model for fusion profitability.
 //
 // Philosophy

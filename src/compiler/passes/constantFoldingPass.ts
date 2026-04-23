@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/constantFoldingPass.ts
 //
 // Compile-time constant propagation on the graph IR.
 //

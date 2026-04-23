@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// analysis/loopAnalysis.ts
-//
 // Loop IR analysis utilities consumed by LoopFusionPass and LoopTilingPass.
 //
 // Capabilities

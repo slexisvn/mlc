@@ -1,10 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// ir/types.ts
-//
-// Shared primitive types used across every layer of the compiler.
-// No runtime logic here; pure type aliases and interfaces.
-// ─────────────────────────────────────────────────────────────────────────────
-
 /** Element data type of a tensor. Open-ended string allows backends to extend. */
 export type DType = "float32" | "float64" | "int32" | "int64" | "bool" | string;
 

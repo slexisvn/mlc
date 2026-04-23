@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// analysis/layoutAnalysis.ts
-//
 // Per-tensor layout fact inference and conflict detection.
 //
 // The analysis does a single forward pass over a topologically sorted graph

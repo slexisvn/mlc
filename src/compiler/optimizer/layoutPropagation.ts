@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// optimizer/layoutPropagation.ts
-//
 // Utilities for testing whether a layout can propagate through a sequence of
 // ops without hitting a layout boundary.
 //

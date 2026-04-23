@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// frontend/core/context.ts
 //
 // Active graph context — thread-local-style singleton that holds the currently
 // active GraphBuilder and parameter accumulator during a session build.

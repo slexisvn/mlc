@@ -1,99 +1,62 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// framework/examples/pytorchCompilerDemo.ts
 //
-// Comprehensive end-to-end demo — exercises all compiler passes on both
-// the forward and backward graphs of a model defined via the PyTorch-like API.
+// End-to-end demo: regular deeper MLP with ReLU activations.
 //
-// Pass coverage plan
-// ──────────────────
-// ConstantFoldingPass  — ctx.const() tensors flow through add/relu; the
-//                        compiler folds them to compile-time values.
-// CSEPass              — the model computes x·W twice (shared linear transform);
-//                        the second copy is eliminated.
-// DeadCodeEliminationPass — a branch is computed but never marked as output;
-//                           DCE prunes it (also picks up CF leftovers).
-// LayoutInsertionPass  — img is named "img_NHWC" so layout analysis labels it
-//                        NHWC.  pool2d requires NCHW.  The compiler detects this
-//                        conflict and inserts a NHWC→NCHW transpose automatically.
-//                        The user model never calls transposeLayout().
-// LayoutTransformPass  — cancels any redundant transpose pairs created during
-//                        layout insertion or surviving from prior passes.
-// FusionPass           — matmul→add pattern fuses to linear.
-// LoopLoweringPass     — always runs; translates surviving nodes to loop IR
-//                        (ops without a lowering rule — e.g. transpose, pool2d
-//                         — are skipped with a diagnostic warning).
+// Model: MLPClassifier
+//   x  →  fc1 (128→256) → ReLU  →  fc2 (256→128) → ReLU  →  fc3 (128→32)
 //
-// Both the forward graph and the autodiff backward graph are independently run
-// through the full pipeline.
+// Compiler optimisations demonstrated
+// ─────────────────────────────────────
+// FusionPass       — matmul+bias+relu fuses to linear_relu (fc1, fc2).
+//                    matmul+bias fuses to linear (fc3).
+// DCE              — removes unused graph inputs from the optimised backward
+//                    graph (forward inputs not consumed by any gradient node).
+// LoopLoweringPass — emits explicit loop nests for linear, linear_relu, and
+//                    the step op (Heaviside) introduced by the relu gradient.
+//
+// Backward differentiation
+// ─────────────────────────
+// ReLU gradient: ∂L/∂x = ∂L/∂out * step(x)   (Heaviside gate).
+// Gradients are computed for all six trainable parameters:
+//   fc1.weight, fc1.bias, fc2.weight, fc2.bias, fc3.weight, fc3.bias.
+//
+// Note: no optimizer or training loop is included — the framework exposes
+// forward tracing and backward graph generation only.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import * as nn                                              from "../nn";
-import { ExportSession }                                    from "../export/session";
-import { SymbolicTensor as Tensor }                        from "../tensor/tensor";
-import { importGraphIR }                                    from "../export/importGraphIR";
-import { IRPackage, GraphIR }                              from "../ir/schema";
-import { TensorId }                                        from "../ir/ids";
-import { buildBackwardGraph, DEFAULT_GRAD_BUILDERS }        from "../autodiff";
-import { defaultOpRegistry }                               from "../core/opRegistry";
-import { validateIRPackage }                                from "../ir/validator";
-import { validateGraph }                                    from "../../compiler/ir/validate";
-import { createDefaultPipeline }                           from "../../compiler/passes/pipelines";
-import { printGraph, printDiff }                           from "../../compiler/debug/printer";
-import { printLoopModule }                                 from "../../compiler/debug/loopPrinter";
-
-// Register grad builders so autodiff can differentiate all ops used below.
-// (The default registry starts empty for grad builders; we extend it here.)
-for (const [op, fn] of Object.entries(DEFAULT_GRAD_BUILDERS)) {
-  defaultOpRegistry.register({
-    ...defaultOpRegistry.get(op),
-    gradBuilder: fn,
-  });
-}
+import * as nn                                              from "../framework/nn";
+import { ExportSession }                                    from "../framework/export/session";
+import { SymbolicTensor as Tensor }                        from "../framework/tensor/tensor";
+import { importGraphIR }                                    from "../framework/export/importGraphIR";
+import { IRPackage, GraphIR }                              from "../framework/ir/schema";
+import { TensorId }                                        from "../framework/ir/ids";
+import { buildBackwardGraph }                               from "../framework/autodiff";
+import { validateIRPackage }                                from "../framework/ir/validator";
+import { validateGraph }                                    from "../compiler/ir/validate";
+import { createDefaultPipeline }                           from "../compiler/passes/pipelines";
+import { printGraph, printDiff }                           from "../compiler/debug/printer";
+import { printLoopModule }                                 from "../compiler/debug/loopPrinter";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase A — Model definition
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * A model that deliberately exercises every compiler pass trigger pattern.
+ * Three-layer MLP with ReLU activations.
  *
- * Inputs:
- *   x    [32, 128]    — main activation input
+ *   x [32,128]  →  fc1(128→256)+ReLU  →  fc2(256→128)+ReLU  →  fc3(128→32)
  *
- * Constants (injected via ctx.const):
- *   cA, cB — scalar constants; add(cA, cB).relu() is folded at compile time.
- *
- * The layout insertion trigger (pool2d on img_NHWC) is wired at session.build
- * level so that `pooled` is a graph output and DCE keeps it live.
+ * The final layer has no activation so logits are unbounded.
  */
-class AllPassModel extends nn.Module {
-  // Fusion trigger: matmul→add pattern fuses to linear
-  private readonly fc1 = this.register("fc1", new nn.Linear(128, 64));
-  // Second linear for CSE demo (same input weight produces same matmul)
-  private readonly fc2 = this.register("fc2", new nn.Linear(64, 32));
+class MLPClassifier extends nn.Module {
+  private readonly fc1 = this.register("fc1", new nn.Linear(128, 256));
+  private readonly fc2 = this.register("fc2", new nn.Linear(256, 128));
+  private readonly fc3 = this.register("fc3", new nn.Linear(128, 32));
 
-  /**
-   * @param x   Main input [32, 128]
-   * @param cA  Compile-time scalar constant
-   * @param cB  Compile-time scalar constant
-   */
-  forward(x: Tensor, cA: Tensor, cB: Tensor): Tensor {
-    // ── Fusion trigger: matmul → add (bias) → linear ──────────────────────
-    const h1 = this.fc1.forward(x);          // matmul + add_bias → fuses to linear
-
-    // ── CSE trigger: compute fc1 output again with same inputs ────────────
-    // fc1.forward(x) is computed twice → second copy is eliminated by CSE.
-    const h1_dup = this.fc1.forward(x);      // duplicate — CSE will remove
-    const h2 = this.fc2.forward(h1_dup);     // uses the dup (gets rewired to h1)
-
-    // ── Constant folding + DCE trigger ────────────────────────────────────
-    // Both cA and cB carry constantPayload → CF folds the chain at compile time.
-    // The result is not included in the return value, so DCE prunes the const
-    // node after CF runs.
-    const cfResult = cA.add(cB).relu();      // folded then DCE-pruned
-    void cfResult;
-
-    return h2;
+  forward(x: Tensor): Tensor {
+    const h1 = this.fc1.forward(x).relu();   // [32, 256]  → fused to linear_relu
+    const h2 = this.fc2.forward(h1).relu();  // [32, 128]  → fused to linear_relu
+    return this.fc3.forward(h2);             // [32, 32]   → fused to linear
   }
 }
 
@@ -108,45 +71,25 @@ export function runPytorchCompilerDemo(): void {
   // ── A: Trace forward graph ─────────────────────────────────────────────
   sec("Phase A — Model definition (PyTorch-like API)");
 
-  const fwdSession = new ExportSession({ id: "all_pass_model" });
-  const model      = new AllPassModel();
+  const fwdSession = new ExportSession({ id: "mlp_classifier" });
+  const model      = new MLPClassifier();
 
   let fwdGraphIR!: GraphIR;
   let paramIds:    TensorId[] = [];
   let lossId!:     TensorId;
 
   fwdSession.build(ctx => {
-    const x   = ctx.input("x",        "float32", [32, 128]);
-    // img_NHWC: name substring "NHWC" seeds layout analysis to NHWC.
-    const img = ctx.input("img_NHWC", "float32", [1, 8, 8, 4]);
-
-    // Compile-time constants — bridge will attach constantPayload.
-    const cA = ctx.const("cA", "float32", [1], [2.0]);
-    const cB = ctx.const("cB", "float32", [1], [3.0]);
-
-    // Layout insertion trigger: pool2d requires NCHW; img has NHWC layout.
-    // The user model never calls transposeLayout() — LayoutInsertionPass
-    // detects the conflict and inserts NHWC→NCHW automatically.
-    // Marking pooled as an output keeps the node live past DCE.
-    const pooled = img.pool2d(2, 2);
-    ctx.markOutput(pooled);   // first output — DCE-live
-
-    const y = model.forward(x, cA, cB);
-    ctx.markOutput(y);        // last output = lossId for autodiff
+    const x = ctx.input("x", "float32", [32, 128]);
+    const y = model.forward(x);
+    ctx.markOutput(y);   // [32, 32] — seeded as the loss root for autodiff
   });
 
   const fwdPkg = fwdSession.export("forward");
   fwdGraphIR   = fwdPkg.graphs[0];
 
-  // Collect param ids for autodiff — exclude compile-time constants since
-  // they're not on the param → output path that autodiff differentiates.
-  const constIds = new Set(
-    (fwdPkg.parameters ?? [])
-      .filter(p => p.isConst)
-      .map(p => p.tensorId),
-  );
+  // All graph inputs that are trainable parameters become autodiff targets.
   paramIds = fwdGraphIR.inputIds.filter(
-    tid => fwdGraphIR.tensors[tid].isParam && !constIds.has(tid),
+    tid => fwdGraphIR.tensors[tid].isParam,
   );
 
   // Loss id: last output of forward graph
@@ -175,7 +118,6 @@ export function runPytorchCompilerDemo(): void {
     fwdGraphIR,
     [lossId],
     paramIds,
-    defaultOpRegistry,
   );
 
   console.log(
@@ -252,3 +194,5 @@ function _compileAndPrint(
     printLoopModule(loopModule, `Loop IR — ${kind}`);
   }
 }
+
+runPytorchCompilerDemo();

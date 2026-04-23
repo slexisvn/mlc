@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// shared-ir/serializer.ts
 //
 // JSON serialization and deserialization of IRPackage.
 //

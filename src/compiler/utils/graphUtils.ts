@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// utils/graphUtils.ts
 //
 // Shared graph manipulation helpers used by the pattern matcher, cost model,
 // and fusion pass.

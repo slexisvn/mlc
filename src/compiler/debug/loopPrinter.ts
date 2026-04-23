@@ -1,15 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// debug/loopPrinter.ts
-//
-// Console-oriented pretty-printer for LoopModule.
-//
-// Output style matches printer.ts:
-//   • "─".repeat(62) heavy rule for section boundaries.
-//   • "·".repeat(62) thin rule between functions.
-//   • Two-space indent per loop level, starting at four spaces.
-//   • ▸ bullet for top-level items.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import {
   LoopModule,
   LoopFunction,
@@ -20,14 +8,6 @@ import {
 const LINE = "─".repeat(62);
 const THIN = "·".repeat(62);
 
-// ── Public API ────────────────────────────────────────────────────────────────
-
-/**
- * Print a LoopModule to stdout.
- *
- * @param module  The module to print.
- * @param title   Optional label shown in the header line.
- */
 export function printLoopModule(module: LoopModule, title?: string): void {
   console.log(`\n${LINE}`);
   if (title) console.log(`  ${title}`);
@@ -52,8 +32,6 @@ export function printLoopModule(module: LoopModule, title?: string): void {
 
   console.log(LINE);
 }
-
-// ── Private ───────────────────────────────────────────────────────────────────
 
 function _printFunction(fn: LoopFunction): void {
   const inputs  = fn.params.filter(p => p.role === "input");
@@ -80,14 +58,10 @@ function _printFunction(fn: LoopFunction): void {
   console.log(THIN);
 }
 
-/**
- * Recursively print a statement with the given indentation level.
- */
 function _printStmt(stmt: LoopStmt, indent: number): void {
   const pad = " ".repeat(indent);
 
   if (stmt.kind === "ForLoop") {
-    // Show symbolic hiExpr when the bound is dynamic (edge-tile loops).
     const hiStr =
       stmt.hi === -1
         ? stmt.hiExpr !== undefined
@@ -99,25 +73,18 @@ function _printStmt(stmt: LoopStmt, indent: number): void {
       _printStmt(s, indent + 2);
     }
   } else {
-    // Assign
     const op  = stmt.accumulate ? "+=" : "=";
     console.log(`${pad}${_fmtExpr(stmt.target)} ${op} ${_fmtExpr(stmt.value)}`);
   }
 }
 
-/**
- * Format a LoopExpr as a compact infix string.
- *
- * Literals are always shown with a decimal point so the reader can
- * distinguish float constants (0.0) from array indices (i0).
- */
 function _fmtExpr(e: LoopExpr): string {
   switch (e.kind) {
     case "LoopVar":
       return e.name;
 
     case "Literal":
-      // Show 0 as 0.0, 1 as 1.0, etc. — clearly float.
+      if (e.isIndex) return String(Math.trunc(e.value));
       return Number.isInteger(e.value) ? `${e.value}.0` : String(e.value);
 
     case "MemRef":

@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/pass.ts
 //
 // Core Pass abstraction used by every optimization pass in the pipeline.
 //

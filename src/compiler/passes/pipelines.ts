@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/pipelines.ts
 //
 // Pre-built pipeline factories with the correct default pass ordering.
 //

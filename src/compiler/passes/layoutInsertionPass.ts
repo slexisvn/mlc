@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/layoutInsertionPass.ts
 //
 // Compiler-owned layout insertion pass.
 //

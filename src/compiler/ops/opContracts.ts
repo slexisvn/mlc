@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ops/opContracts.ts
-//
 // Op-level semantic contracts used by layout analysis, fusion decision logic,
 // and the pre-layout graph-simplification passes (CF, CSE, DCE).
 //
@@ -112,6 +110,8 @@ export const DEFAULT_OP_CONTRACTS: readonly OpContract[] = [
   { op: "sqrt",     fusibilityClass: "fusible",     layoutBehavior: "agnostic",     pure: true,  foldable: true,  description: "Square root" },
   { op: "neg",      fusibilityClass: "fusible",     layoutBehavior: "agnostic",     pure: true,  foldable: true,  description: "Element-wise negate" },
   { op: "abs",      fusibilityClass: "fusible",     layoutBehavior: "agnostic",     pure: true,  foldable: true,  description: "Element-wise absolute value" },
+  { op: "step",     fusibilityClass: "fusible",     layoutBehavior: "agnostic",     pure: true,  foldable: false, description: "Heaviside step: 1 if x > 0 else 0" },
+  { op: "softmax",       fusibilityClass: "fusible",     layoutBehavior: "agnostic",     pure: true,  foldable: false, description: "Softmax normalisation along last axis" },
   { op: "bn",       fusibilityClass: "fusible",     layoutBehavior: "preserving",   pure: true,  foldable: false, description: "Batch normalisation" },
   { op: "ln",       fusibilityClass: "fusible",     layoutBehavior: "preserving",   pure: true,  foldable: false, description: "Layer normalisation" },
   { op: "dropout",  fusibilityClass: "fusible",     layoutBehavior: "preserving",   pure: false, foldable: false, description: "Dropout (stochastic)" },
@@ -124,6 +124,10 @@ export const DEFAULT_OP_CONTRACTS: readonly OpContract[] = [
   { op: "reshape",  fusibilityClass: "conditional", layoutBehavior: "transforming", pure: true,  foldable: false, description: "Shape reshape (may break layout semantics)" },
   { op: "split",    fusibilityClass: "unfusible",   layoutBehavior: "preserving",   pure: true,  foldable: false, description: "Tensor split (multiple outputs)" },
   { op: "concat",   fusibilityClass: "unfusible",   layoutBehavior: "preserving",   pure: true,  foldable: false, description: "Tensor concatenation" },
+  { op: "linear_relu",    fusibilityClass: "fusible", layoutBehavior: "sensitive",  pure: true, foldable: false, requiredInputLayouts: [Layouts.NC], description: "Fused matmul+bias+relu" },
+  { op: "linear_sigmoid", fusibilityClass: "fusible", layoutBehavior: "sensitive",  pure: true, foldable: false, requiredInputLayouts: [Layouts.NC], description: "Fused matmul+bias+sigmoid" },
+  { op: "linear_tanh",    fusibilityClass: "fusible", layoutBehavior: "sensitive",  pure: true, foldable: false, requiredInputLayouts: [Layouts.NC], description: "Fused matmul+bias+tanh" },
+  { op: "linear_gelu",    fusibilityClass: "fusible", layoutBehavior: "sensitive",  pure: true, foldable: false, requiredInputLayouts: [Layouts.NC], description: "Fused matmul+bias+gelu" },
 ];
 
 export const DEFAULT_CONTRACT_REGISTRY = new OpContractRegistry(DEFAULT_OP_CONTRACTS);

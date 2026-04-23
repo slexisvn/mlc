@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// patterns/layoutRules.ts
 //
 // Layout rewrite rules — pure data, decoupled from matching and rewrite logic.
 //

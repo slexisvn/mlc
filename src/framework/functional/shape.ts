@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// frontend/functional/shape.ts
-//
-// Shape manipulation ops.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { getActiveBuilder } from "../core/context";
 import { SymbolicTensor }   from "../tensor/tensor";
 

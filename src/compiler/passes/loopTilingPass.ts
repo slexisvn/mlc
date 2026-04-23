@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/loopTilingPass.ts
 //
 // Loop-level tiling pass (strip-mining).
 //

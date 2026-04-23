@@ -1,14 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// debug/printer.ts
-//
-// Console-oriented graph visualisation and execution-plan printer.
-//
-// printGraph()          — full structured dump of a graph (nodes, tensors,
-//                         inputs, outputs).  Used for before/after diffs.
-// printExecutionPlan()  — topologically ordered execution steps.
-// printDiff()           — side-by-side summary showing node count change.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { Graph } from "../ir/graph";
 import { topoSort } from "../utils/toposort";
 import { LayoutAnalysisResult } from "../analysis/layoutAnalysis";
@@ -17,14 +6,6 @@ import { FusionAnalysisResult } from "../analysis/fusionAnalysis";
 const LINE = "─".repeat(62);
 const THIN = "·".repeat(62);
 
-// ─── Graph dump ───────────────────────────────────────────────────────────────
-
-/**
- * Print a complete human-readable representation of the graph.
- *
- * @param graph  The graph to print.
- * @param title  Optional header shown above the graph dump.
- */
 export function printGraph(graph: Graph, title?: string): void {
   console.log(`\n${LINE}`);
   if (title) console.log(`  ${title}`);
@@ -43,7 +24,6 @@ export function printGraph(graph: Graph, title?: string): void {
     }
   }
 
-  // ── Graph outputs ─────────────────────────────────────────────────────────
   console.log("  ▸ Outputs:");
   if (graph.outputIds.length === 0) {
     console.log("      (none)");
@@ -54,7 +34,6 @@ export function printGraph(graph: Graph, title?: string): void {
     }
   }
 
-  // ── Nodes ─────────────────────────────────────────────────────────────────
   console.log(`  ▸ Nodes (${graph.nodeOrder.length}):`);
   for (const nid of graph.nodeOrder) {
     const n = graph.getNode(nid);
@@ -65,7 +44,6 @@ export function printGraph(graph: Graph, title?: string): void {
     console.log(`      ${" ".repeat(nid.length + 2)}  ${_padR("", 16)}  out=[${outStr}]${attrsStr}`);
   }
 
-  // ── Tensor inventory ──────────────────────────────────────────────────────
   console.log(`  ▸ Tensors (${graph.tensors.size}):`);
   const sortedTensors = [...graph.tensors.values()].sort((a, b) => a.id.localeCompare(b.id));
   for (const t of sortedTensors) {
@@ -76,12 +54,6 @@ export function printGraph(graph: Graph, title?: string): void {
   console.log(`${LINE}\n`);
 }
 
-// ─── Execution plan ───────────────────────────────────────────────────────────
-
-/**
- * Print a topologically-ordered execution plan for the graph.
- * Each step shows the node id, op name, inputs, and outputs.
- */
 export function printExecutionPlan(graph: Graph, title?: string): void {
   const { order, hasCycle } = topoSort(graph);
 
@@ -108,11 +80,6 @@ export function printExecutionPlan(graph: Graph, title?: string): void {
   console.log(`${LINE}\n`);
 }
 
-// ─── Diff summary ─────────────────────────────────────────────────────────────
-
-/**
- * Print a concise before/after summary showing what the optimiser changed.
- */
 export function printDiff(before: Graph, after: Graph, passName: string): void {
   const nodeDelta   = before.nodeOrder.length - after.nodeOrder.length;
   const tensorDelta = before.tensors.size    - after.tensors.size;
@@ -123,7 +90,6 @@ export function printDiff(before: Graph, after: Graph, passName: string): void {
   console.log(`  Nodes  : ${before.nodeOrder.length} → ${after.nodeOrder.length}  (${_delta(nodeDelta)})`);
   console.log(`  Tensors: ${before.tensors.size}    → ${after.tensors.size}     (${_delta(tensorDelta)})`);
 
-  // Show which ops were removed and which were added.
   const beforeOps = new Set(before.nodeOrder.map(id => `${id}(${before.getNode(id).op})`));
   const afterOps  = new Set(after .nodeOrder.map(id => `${id}(${after .getNode(id).op})`));
 
@@ -134,8 +100,6 @@ export function printDiff(before: Graph, after: Graph, passName: string): void {
   if (added.length)   console.log(`  Added  : ${added.join(", ")}`);
   console.log(`${THIN}\n`);
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function _tensorLabel(graph: Graph, tid: string): string {
   try {
@@ -165,12 +129,6 @@ function _delta(n: number): string {
   return "0 (unchanged)";
 }
 
-// ─── Layout analysis dump ─────────────────────────────────────────────────────
-
-/**
- * Print a summary of layout facts and any detected conflicts / elimination
- * candidates produced by analyzeLayouts().
- */
 export function printLayoutAnalysis(result: LayoutAnalysisResult, title?: string): void {
   console.log(`\n${THIN}`);
   if (title) console.log(`  ${title}`);
@@ -205,12 +163,6 @@ export function printLayoutAnalysis(result: LayoutAnalysisResult, title?: string
   console.log(`${THIN}\n`);
 }
 
-// ─── Fusion analysis dump ─────────────────────────────────────────────────────
-
-/**
- * Print a summary of fusion analysis results including approved candidates
- * and per-node rejection records.
- */
 export function printFusionAnalysis(result: FusionAnalysisResult, title?: string): void {
   console.log(`\n${THIN}`);
   if (title) console.log(`  ${title}`);

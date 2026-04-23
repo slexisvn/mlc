@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ir/graph.ts
-//
 // Core IR: Tensor, Node, and Graph.
 //
 // SSA-like invariants enforced by construction:
@@ -254,6 +252,19 @@ export class Graph {
     } else {
       this._nodeOrder.unshift(node.id);
     }
+  }
+
+  /**
+   * Remove an unused graph-input tensor from both `inputIds` and the tensor
+   * map.  The caller must ensure no node consumes this tensor (i.e. it is
+   * genuinely unreachable from the graph's outputs) before calling this.
+   * Used by DeadCodeEliminationPass to prune inputs that are never consumed.
+   */
+  _removeInputTensor(id: string): void {
+    const idx = this._inputs.indexOf(id);
+    if (idx === -1) throw new Error(`_removeInputTensor: "${id}" is not a graph input`);
+    this._inputs.splice(idx, 1);
+    this._tensors.delete(id);
   }
 
   /** Swap one graph-output tensor id for another. Used after fusion rewiring. */

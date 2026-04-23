@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ir/validate.ts
-//
 // Graph-invariant checker.
 //
 // Invariants verified:

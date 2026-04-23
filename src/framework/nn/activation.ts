@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// frontend/nn/activation.ts
 //
 // Activation modules: ReLU, Sigmoid, Tanh, GELU, Identity.
 // Each is a stateless Module — no parameters, just a single op.
@@ -26,6 +25,9 @@ export const Sigmoid = unaryModule("sigmoid");
 export const Tanh    = unaryModule("tanh");
 /** Gaussian Error Linear Unit. */
 export const GELU    = unaryModule("gelu");
+
+/** Softmax activation (normalises along last axis). */
+export const Softmax = unaryModule("softmax");
 
 /** Pass-through identity module. Useful as a placeholder. */
 export class Identity extends Module {

@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// frontend/functional/elementwise.ts
-//
-// Element-wise functional ops. Require an active ExportSession context.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { getActiveBuilder } from "../core/context";
 import { SymbolicTensor }   from "../tensor/tensor";
 

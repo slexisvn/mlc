@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/loopPass.ts
 //
 // LoopPass interface and LoopPassManager — the Loop IR counterpart of the
 // graph-level Pass / PassManager pair.

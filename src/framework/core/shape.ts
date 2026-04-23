@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// frontend/core/shape.ts
-//
-// Symbolic and concrete shape utilities.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { ShapeError } from "./errors";
 
 export type Dim       = number;
@@ -132,6 +126,40 @@ export function reduceShape(
     else                { result.push(input[i]); }
   }
   return result;
+}
+
+/**
+ * Given an `inputShape` and the `broadcastedShape` produced by broadcasting
+ * `inputShape` against another operand, return the axis indices within
+ * `broadcastedShape` that were expanded relative to `inputShape`.
+ *
+ * These are exactly the axes that must be summed over to reduce a gradient
+ * tensor (shape = `broadcastedShape`) back to `inputShape`.
+ *
+ * Two kinds of expansion are detected:
+ *   1. Leading axes — present in `broadcastedShape` but absent from `inputShape`
+ *      due to rank mismatch.
+ *   2. Suffix axes — present in both, but `inputShape[i] === 1` while
+ *      `broadcastedShape[i + rankDiff] > 1`.
+ */
+export function broadcastedAxes(
+  inputShape:      ShapeExpr,
+  broadcastedShape: ShapeExpr,
+): number[] {
+  const outRank   = broadcastedShape.length;
+  const inputRank = inputShape.length;
+  const rankDiff  = outRank - inputRank;
+  const axes: number[] = [];
+
+  for (let i = 0; i < rankDiff; i++) axes.push(i);
+
+  for (let i = 0; i < inputRank; i++) {
+    if (inputShape[i] === 1 && broadcastedShape[i + rankDiff] > 1) {
+      axes.push(i + rankDiff);
+    }
+  }
+
+  return axes;
 }
 
 export function shapeNumel(shape: ShapeExpr): number {

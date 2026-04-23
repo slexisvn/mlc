@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ir/layouts.ts
-//
 // Layout model for the ML compiler IR.
 //
 // A "layout" describes how a tensor's logical dimensions are arranged in memory

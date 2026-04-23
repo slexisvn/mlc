@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// frontend/functional/linear.ts
-//
-// Linear algebra functional ops.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { getActiveBuilder } from "../core/context";
 import { SymbolicTensor }   from "../tensor/tensor";
 

@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// patterns/layoutMatcher.ts
 //
 // Layout chain matcher — mirrors the fusion matcher's greedy algorithm but
 // operates on LayoutRewriteRules instead of FusionRules.

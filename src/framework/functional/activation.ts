@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// frontend/functional/activation.ts
-//
-// Activation functional ops. Require an active ExportSession context.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { getActiveBuilder } from "../core/context";
 import { SymbolicTensor }   from "../tensor/tensor";
 
@@ -15,3 +9,5 @@ export function sigmoid(x: SymbolicTensor): SymbolicTensor { return getActiveBui
 export function tanh(x: SymbolicTensor):    SymbolicTensor { return getActiveBuilder().applyOp("tanh",    [x])[0]; }
 /** Gaussian error linear unit. */
 export function gelu(x: SymbolicTensor):    SymbolicTensor { return getActiveBuilder().applyOp("gelu",    [x])[0]; }
+/** Softmax normalisation along the last axis. */
+export function softmax(x: SymbolicTensor): SymbolicTensor { return getActiveBuilder().applyOp("softmax", [x])[0]; }

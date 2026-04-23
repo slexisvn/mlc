@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// shared-ir/validator.ts
 //
 // Structural validator for IRPackage values arriving at the IR boundary.
 //

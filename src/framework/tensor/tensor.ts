@@ -1,12 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// frontend/tensor/tensor.ts
-//
-// SymbolicTensor — an immutable handle to a value in a computation graph.
-//
-// Instance helpers (relu, reshape, transpose, …) delegate to the active graph
-// context, giving a PyTorch-like chained API without eager evaluation.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { ShapeExpr } from "../core/shape";
 import { IRDType }   from "../ir/schema";
 import { TensorId }  from "../ir/ids";
@@ -45,14 +36,11 @@ export class SymbolicTensor {
   get isScalar(): boolean { return this.shape.length === 0; }
   get rank():     number  { return this.shape.length; }
 
-  // ─── Instance helpers ────────────────────────────────────────────────────
-  // These delegate into the active context so user code can chain ops without
-  // importing functional/ directly.  They require an active ExportSession.
-
   relu():     SymbolicTensor { return _applyUnary("relu",    this); }
   sigmoid():  SymbolicTensor { return _applyUnary("sigmoid", this); }
   tanh():     SymbolicTensor { return _applyUnary("tanh",    this); }
   gelu():     SymbolicTensor { return _applyUnary("gelu",    this); }
+  softmax():  SymbolicTensor { return _applyUnary("softmax", this); }
   exp():      SymbolicTensor { return _applyUnary("exp",     this); }
   sqrt():     SymbolicTensor { return _applyUnary("sqrt",    this); }
   neg():      SymbolicTensor { return _applyUnary("neg",     this); }
@@ -72,22 +60,6 @@ export class SymbolicTensor {
     const gb    = _getActiveBuilder();
     const attrs = perm ? { perm } as unknown as Record<string, unknown> : {};
     return gb.applyOp("transpose", [this], attrs)[0];
-  }
-
-  /**
-   * Layout-aware transpose.
-   * Emits `perm`, `fromLayout`, and `toLayout` attrs so LayoutTransformPass
-   * can detect and cancel inverse transpose pairs.
-   *
-   * @param fromLayout Source layout string, e.g. "NCHW".
-   * @param toLayout   Destination layout string, e.g. "NHWC".
-   * @param perm       Axis permutation describing the transformation.
-   */
-  transposeLayout(fromLayout: string, toLayout: string, perm: number[]): SymbolicTensor {
-    const gb = _getActiveBuilder();
-    return gb.applyOp("transpose", [this], {
-      perm, fromLayout, toLayout,
-    } as unknown as Record<string, unknown>)[0];
   }
 
   matmul(other: SymbolicTensor): SymbolicTensor { return _applyBinary("matmul", this, other); }

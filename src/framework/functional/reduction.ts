@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// frontend/functional/reduction.ts
-//
-// Reduction ops.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { getActiveBuilder } from "../core/context";
 import { SymbolicTensor }   from "../tensor/tensor";
 

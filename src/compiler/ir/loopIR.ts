@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ir/loopIR.ts
-//
 // Loop IR — explicit loop-nest intermediate representation produced by
 // LoopLoweringPass after graph-level optimization.
 //
@@ -49,10 +47,19 @@ export interface CallBuiltin {
   readonly args: readonly LoopExpr[];
 }
 
-/** Numeric constant. */
+/**
+ * Numeric constant.
+ *
+ * When `isIndex` is true the value is an integer used as an array index,
+ * loop bound, stride, or similar integer-arithmetic context.  The printer
+ * renders it without a decimal point (e.g. `64` instead of `64.0`) so loop
+ * kernels are easier to read.  Leave `isIndex` unset (or false) for genuine
+ * floating-point scalars such as zero-initializers or relu thresholds.
+ */
 export interface Literal {
-  readonly kind: "Literal";
-  readonly value: number;
+  readonly kind:    "Literal";
+  readonly value:   number;
+  readonly isIndex?: boolean;
 }
 
 export type LoopExpr = LoopVar | MemRef | BinOp | CallBuiltin | Literal;
@@ -147,8 +154,8 @@ export function callBuiltin(callee: string, args: readonly LoopExpr[]): CallBuil
   return { kind: "CallBuiltin", callee, args };
 }
 
-export function literal(value: number): Literal {
-  return { kind: "Literal", value };
+export function literal(value: number, isIndex?: boolean): Literal {
+  return isIndex ? { kind: "Literal", value, isIndex: true } : { kind: "Literal", value };
 }
 
 export function assign(target: MemRef, value: LoopExpr, accumulate = false): Assign {

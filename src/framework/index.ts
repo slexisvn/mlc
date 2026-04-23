@@ -8,8 +8,8 @@ export { ExportSession, SessionContext } from "./export/session";
 export type { ExportSessionOptions }     from "./export/session";
 export { SymbolicTensor }                from "./tensor/tensor";
 export type { Tensor }                   from "./tensor/tensor";
-export { buildBackwardGraph, DEFAULT_GRAD_BUILDERS } from "./autodiff";
-export type { BackwardResult }           from "./autodiff";
+export { buildBackwardGraph, DEFAULT_GRAD_BUILDERS, GradRegistry, defaultGradRegistry } from "./autodiff";
+export type { BackwardResult, GradBuilderFn, GradContext } from "./autodiff";
 // Bridge / IR utilities — re-exported for single-import convenience
 export { importGraphIR, importSingleGraphIR, BridgeError } from "./export/importGraphIR";
 export type { ImportResult, ImportOptions }                from "./export/importGraphIR";

@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// optimizer/layoutCanonicalizer.ts
-//
 // Pure-function utilities for simplifying chains of LayoutTransforms.
 //
 // The canonicalization algorithm repeatedly scans an ordered list of

@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// frontend/nn/module.ts
 //
 // Module — base class for all neural network components.
 //

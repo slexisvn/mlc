@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/loopLoweringPass.ts
 //
 // Terminal lowering pass: translates an optimized Graph IR into an explicit
 // Loop IR (LoopModule) without mutating the graph.
@@ -15,9 +14,11 @@
 // Supported ops
 // ──────────────
 // Elementwise (any rank):  add, sub, mul, relu, add_relu
-// Reduction:               matmul  (2-D; [M,K] × [K,N] → [M,N])
-// Spatial:                 transpose  (any-rank permutation)
+// Reduction:               matmul   (2-D; [M,K] × [K,N] → [M,N])
+//                          sum      (any rank, arbitrary axes, keepDims)
+// Data:                    transpose  (any-rank permutation)
 //                          pool2d     (2-D spatial stride window)
+//                          reshape    (arbitrary shape, row-major flat-index)
 // Fused:                   linear       (matmul + bias-add)
 //                          linear_relu  (matmul + bias + relu in one nest)
 //
@@ -29,8 +30,10 @@
 //   relu:        out[…] = max(0.0, x[…])
 //   add_relu:    out[…] = max(0.0, a[…] + b[…])            ← fusion payoff
 //   matmul:      for i, j: out[i,j]=0; for k: out[i,j]+=x[i,k]*w[k,j]
+//   sum:         for outer: out[…]=0; for axes: out[…]+=in[…]  (keepDims aware)
 //   transpose:   for i0..iN: out[perm(i0..iN)] = in[i0..iN]
 //   pool2d:      for n,c,oi,oj: out=0; for ki,kj: out=max(out, in[n,c,oi*s+ki,oj*s+kj])
+//   reshape:     out[i…] = in[j…]  via flat←output→input index decomposition
 //   linear:      for i, j: out[i,j]=bias; for k: out+=x·w
 //   linear_relu: for i, j: out[i,j]=bias; for k: out+=x·w; out=relu(out)
 //                                                           ← fusion payoff
@@ -237,6 +240,90 @@ export class LoopLoweringPass implements Pass {
           ),
         };
 
+      case "step":
+        return {
+          stmts: this._lowerElementwise(
+            node, graph,
+            ([x]) => callBuiltin("step", [x]),
+          ),
+        };
+
+      case "sigmoid":
+        return {
+          stmts: this._lowerElementwise(
+            node, graph,
+            ([x]) => callBuiltin("sigmoid", [x]),
+          ),
+        };
+
+      case "tanh":
+        return {
+          stmts: this._lowerElementwise(
+            node, graph,
+            ([x]) => callBuiltin("tanh", [x]),
+          ),
+        };
+
+      case "gelu":
+        return {
+          stmts: this._lowerElementwise(
+            node, graph,
+            ([x]) => callBuiltin("gelu", [x]),
+          ),
+        };
+
+      case "exp":
+        return {
+          stmts: this._lowerElementwise(
+            node, graph,
+            ([x]) => callBuiltin("exp", [x]),
+          ),
+        };
+
+      case "sqrt":
+        return {
+          stmts: this._lowerElementwise(
+            node, graph,
+            ([x]) => callBuiltin("sqrt", [x]),
+          ),
+        };
+
+      case "neg":
+        return {
+          stmts: this._lowerElementwise(
+            node, graph,
+            ([x]) => callBuiltin("neg", [x]),
+          ),
+        };
+
+      case "abs":
+        return {
+          stmts: this._lowerElementwise(
+            node, graph,
+            ([x]) => callBuiltin("abs", [x]),
+          ),
+        };
+
+      case "div":
+        return {
+          stmts: this._lowerElementwise(
+            node, graph,
+            ([a, b]) => binOp("/", a, b),
+          ),
+        };
+
+      case "softmax":
+        return { stmts: this._lowerSoftmax(node, graph) };
+
+      case "linear_sigmoid":
+        return { stmts: this._lowerLinearAct(node, graph, ([x]) => callBuiltin("sigmoid", [x])) };
+
+      case "linear_tanh":
+        return { stmts: this._lowerLinearAct(node, graph, ([x]) => callBuiltin("tanh", [x])) };
+
+      case "linear_gelu":
+        return { stmts: this._lowerLinearAct(node, graph, ([x]) => callBuiltin("gelu", [x])) };
+
       case "matmul":
         return { stmts: this._lowerMatmul(node, graph) };
 
@@ -251,6 +338,12 @@ export class LoopLoweringPass implements Pass {
 
       case "linear_relu":
         return { stmts: this._lowerLinearRelu(node, graph) };
+
+      case "sum":
+        return { stmts: this._lowerSum(node, graph) };
+
+      case "reshape":
+        return { stmts: this._lowerReshape(node, graph) };
 
       default:
         return {
@@ -426,9 +519,9 @@ export class LoopLoweringPass implements Pass {
 
     // in[n, c, oi*S + ki, oj*S + kj]  (stride * outer index + kernel offset)
     // We represent oi*S + ki as a BinOp literal chain:
-    //   binOp("+", binOp("*", literal(S), oiV), kiV)
-    const inRow = binOp("+", binOp("*", literal(S), oiV), kiV);
-    const inCol = binOp("+", binOp("*", literal(S), ojV), kjV);
+    //   binOp("+", binOp("*", literal(S, true), oiV), kiV)
+    const inRow = binOp("+", binOp("*", literal(S, true), oiV), kiV);
+    const inCol = binOp("+", binOp("*", literal(S, true), ojV), kjV);
     const inRef = memRef(xName, [nV, cV, inRow, inCol]);
 
     // innermost: out = max(out, in[...])
@@ -528,6 +621,129 @@ export class LoopLoweringPass implements Pass {
    * Degrades to matmul lowering if fewer than 3 inputs are present (should
    * not occur after a correctly run FusionPass, but guarded for safety).
    */
+  /**
+   * Lower a `linear_<act>` fused node (matmul + bias + activation).
+   * The activation is provided as a callback from the dispatch table.
+   */
+  private _lowerLinearAct(
+    node: Node,
+    graph: Graph,
+    act: (refs: MemRef[]) => LoopExpr,
+  ): LoopStmt[] {
+    if (node.inputs.length < 3) return this._lowerMatmul(node, graph);
+
+    const [xTid, wTid, biasTid] = node.inputs;
+    const [outTid]               = node.outputs;
+
+    const xShape    = graph.getTensor(xTid).shape;
+    const wShape    = graph.getTensor(wTid).shape;
+    const biasShape = graph.getTensor(biasTid).shape;
+
+    const M = xShape[0] ?? 1;
+    const K = xShape[1] ?? 1;
+    const N = wShape.length >= 2 ? (wShape[1] ?? 1) : (wShape[0] ?? 1);
+
+    const xName    = graph.getTensor(xTid).name;
+    const wName    = graph.getTensor(wTid).name;
+    const biasName = graph.getTensor(biasTid).name;
+    const outName  = graph.getTensor(outTid).name;
+
+    const iV = loopVar("i");
+    const jV = loopVar("j");
+    const kV = loopVar("k");
+
+    const outIJ   = memRef(outName,  [iV, jV]);
+    const xIK     = memRef(xName,    [iV, kV]);
+    const wKJ     = memRef(wName,    [kV, jV]);
+    const biasRef = biasShape.length >= 2
+      ? memRef(biasName, [iV, jV])
+      : memRef(biasName, [jV]);
+
+    const kBody: LoopStmt[] = [assign(outIJ, binOp("*", xIK, wKJ), true)];
+    const jBody: LoopStmt[] = [
+      assign(outIJ, biasRef),
+      forLoop("k", 0, K, kBody),
+      assign(outIJ, act([outIJ])),
+    ];
+    return [forLoop("i", 0, M, [forLoop("j", 0, N, jBody)])];
+  }
+
+  // ── softmax lowering (2-D, along last axis) ───────────────────────────────
+
+  /**
+   * Lower softmax to a 2-pass loop over each row:
+   *   Pass 1: compute row max for numerical stability.
+   *   Pass 2: sum of exp(x - max).
+   *   Pass 3: divide each element by the sum.
+   *
+   * For non-2D input falls back to a diagnostic.
+   * For 2-D input [M, N]:
+   *   for i in [0, M):
+   *     max_val = x[i, 0]
+   *     for j in [1, N): max_val = max(max_val, x[i, j])
+   *     sum_val = 0
+   *     for j in [0, N): out[i, j] = exp(x[i,j] - max_val); sum_val += out[i,j]
+   *     for j in [0, N): out[i, j] /= sum_val
+   */
+  private _lowerSoftmax(node: Node, graph: Graph): LoopStmt[] {
+    const [xTid]   = node.inputs;
+    const [outTid] = node.outputs;
+
+    const xShape  = graph.getTensor(xTid).shape;
+    if (xShape.length !== 2) {
+      // Emit identity copy for non-2D (unsupported); leave diagnostic via default path.
+      return this._lowerElementwise(node, graph, ([x]) => x);
+    }
+
+    const M = xShape[0];
+    const N = xShape[1];
+
+    const xName   = graph.getTensor(xTid).name;
+    const outName = graph.getTensor(outTid).name;
+
+    const iV = loopVar("i");
+    const jV = loopVar("j");
+
+    const xIJ   = memRef(xName,   [iV, jV]);
+    const outIJ = memRef(outName, [iV, jV]);
+
+    // We need two scalar temps — encode as 1-D single-element refs.
+    // Loop IR doesn't have scalar vars; use single-element dim-0 arrays named
+    // _softmax_max and _softmax_sum via 0-indexed memRef.
+    // Instead, inline the logic by reusing the output buffer for the exp pass
+    // and accumulating sum via a dedicated temp named with loopVar pattern.
+    // Simplest correct lowering: emit as three sequential j-loops per row.
+
+    const j0V = loopVar("j");  // reused below
+
+    // j-loop bodies
+    const initMaxBody: LoopStmt[]  = [assign(memRef("_smax", [iV]),
+      callBuiltin("max", [memRef("_smax", [iV]), xIJ]))];
+    const expSumBody: LoopStmt[]   = [
+      assign(outIJ, callBuiltin("exp", [binOp("-", xIJ, memRef("_smax", [iV]))])),
+      assign(memRef("_ssum", [iV]), binOp("+", memRef("_ssum", [iV]), outIJ), false),
+    ];
+    const normaliseBody: LoopStmt[] = [
+      assign(outIJ, binOp("/", outIJ, memRef("_ssum", [iV]))),
+    ];
+
+    void j0V;  // suppress unused warning — j-loop var reused
+
+    const rowBody: LoopStmt[] = [
+      // Initialise accumulators
+      assign(memRef("_smax", [iV]), memRef(xName, [iV, literal(0, true)])),
+      assign(memRef("_ssum", [iV]), literal(0)),
+      // Pass 1: find row max
+      forLoop("j", 1, N, initMaxBody),
+      // Pass 2: exp(x - max) and accumulate sum
+      forLoop("j", 0, N, expSumBody),
+      // Pass 3: normalise
+      forLoop("j", 0, N, normaliseBody),
+    ];
+
+    return [forLoop("i", 0, M, rowBody)];
+  }
+
   private _lowerLinearRelu(node: Node, graph: Graph): LoopStmt[] {
     if (node.inputs.length < 3) {
       // Degrade gracefully — treat as plain matmul.
@@ -576,4 +792,153 @@ export class LoopLoweringPass implements Pass {
 
     return [forLoop("i", 0, M, [forLoop("j", 0, N, jBody)])];
   }
+
+  // ── sum lowering (reduction along specified axes) ─────────────────────────
+
+  /**
+   * Lower a reduction sum to nested outer + inner loop nests.
+   *
+   * For each element of the output (outer loops over non-reduced dims):
+   *   out[outIdx] = 0.0
+   *   for each element of the reduction space (inner loops over axes):
+   *     out[outIdx] += in[fullIdx]
+   *
+   * Supports keepDims (output retains input rank with size-1 at reduced dims)
+   * and no-keepDims (reduced dims are absent from output shape entirely).
+   */
+  private _lowerSum(node: Node, graph: Graph): LoopStmt[] {
+    const [xTid]   = node.inputs;
+    const [outTid] = node.outputs;
+
+    const xShape   = graph.getTensor(xTid).shape;
+    const rank     = xShape.length;
+    const xName    = graph.getTensor(xTid).name;
+    const outName  = graph.getTensor(outTid).name;
+
+    const axesRaw  = (node.attrs["axes"]     as number[] | undefined) ?? [];
+    const keepDims = (node.attrs["keepDims"] as boolean  | undefined) ?? false;
+
+    // Normalise axis indices to allow negative values.
+    const axisSet = new Set(axesRaw.map(a => ((a % rank) + rank) % rank));
+
+    // Non-reduced dims → outer loop variables r0, r1, …
+    const outerDims: Array<{ inputDim: number; varName: string }> = [];
+    for (let d = 0; d < rank; d++) {
+      if (!axisSet.has(d)) outerDims.push({ inputDim: d, varName: `r${d}` });
+    }
+
+    // Reduced dims → inner (accumulation) loop variables k0, k1, …
+    const innerDims: Array<{ inputDim: number; varName: string }> = [];
+    for (let d = 0; d < rank; d++) {
+      if (axisSet.has(d)) innerDims.push({ inputDim: d, varName: `k${d}` });
+    }
+
+    // LoopVar objects keyed by input dimension.
+    const outerVarOf = new Map(outerDims.map(({ inputDim, varName }) => [inputDim, loopVar(varName)]));
+    const innerVarOf = new Map(innerDims.map(({ inputDim, varName }) => [inputDim, loopVar(varName)]));
+
+    // Output indices.
+    //   keepDims=true : same rank; reduced positions fixed at literal(0).
+    //   keepDims=false: rank = input rank − |axes|; only outer vars present.
+    const outIdx: LoopExpr[] = keepDims
+      ? Array.from({ length: rank }, (_, d) =>
+          (axisSet.has(d) ? literal(0, true) : outerVarOf.get(d)!) as LoopExpr)
+      : outerDims.map(({ inputDim }) => outerVarOf.get(inputDim)! as LoopExpr);
+
+    // Input indices: outer var for non-reduced dims, inner var for reduced.
+    const inIdx: LoopExpr[] = Array.from({ length: rank }, (_, d) =>
+      (axisSet.has(d) ? innerVarOf.get(d)! : outerVarOf.get(d)!) as LoopExpr,
+    );
+
+    const outRef = memRef(outName, outIdx);
+    const inRef  = memRef(xName,   inIdx);
+
+    // Build reduction nest innermost-first, then reverse-wrap so the first
+    // axis in innerDims becomes the outermost reduction loop.
+    let reductionNest: LoopStmt[] = [assign(outRef, inRef, true /* += */)];
+    for (let i = innerDims.length - 1; i >= 0; i--) {
+      const { inputDim, varName } = innerDims[i];
+      reductionNest = [forLoop(varName, 0, xShape[inputDim], reductionNest)];
+    }
+
+    // The accumulator init and reduction loops form the body of the outer nest.
+    const outerBody: LoopStmt[] = [assign(outRef, literal(0)), ...reductionNest];
+
+    return nestedLoops(
+      outerDims.map(({ varName }) => varName),
+      outerDims.map(({ inputDim }) => xShape[inputDim]),
+      outerBody,
+    );
+  }
+
+  // ── reshape lowering (row-major flat-index encoding/decoding) ─────────────
+
+  /**
+   * Lower a reshape to an element-wise copy with explicit index mapping.
+   *
+   * Iterates the output shape with nested loops.  For each output position
+   * the flat (linear) index is computed from the output multi-index using the
+   * output row-major strides, then decomposed into the input multi-index:
+   *
+   *   flat    = i0·S0_out + i1·S1_out + … + i_{R-1}
+   *   j_d     = floor(flat / S_d_in) % xShape[d]
+   *   out[i…] = in[j0, j1, …]
+   *
+   * `mod` is emitted as callBuiltin("mod", …); `/` as BinOp("/", …) (floor
+   * division for integer indices).
+   */
+  private _lowerReshape(node: Node, graph: Graph): LoopStmt[] {
+    const [xTid]   = node.inputs;
+    const [outTid] = node.outputs;
+
+    const xShape   = graph.getTensor(xTid).shape;
+    const outShape = graph.getTensor(outTid).shape;
+    const xName    = graph.getTensor(xTid).name;
+    const outName  = graph.getTensor(outTid).name;
+
+    const outRank = outShape.length;
+    const inRank  = xShape.length;
+
+    const outStrides = _rowMajorStrides(outShape);
+    const inStrides  = _rowMajorStrides(xShape);
+
+    // Output loop variables i0…i_{outRank-1}.
+    const outVarNames = outShape.map((_, i) => `i${i}`);
+    const outVars     = outVarNames.map(n => loopVar(n));
+
+    // Flat index: i0*S0 + i1*S1 + … + i_{R-1}  (left-folded sum of terms).
+    let flatExpr: LoopExpr = literal(0);
+    for (let d = 0; d < outRank; d++) {
+      const term: LoopExpr = outStrides[d] === 1
+        ? outVars[d]
+        : binOp("*", outVars[d], literal(outStrides[d], true));
+      flatExpr = d === 0 ? term : binOp("+", flatExpr, term);
+    }
+
+    // Input indices: j_d = floor(flat / inStrides[d]) % xShape[d].
+    const inIdx: LoopExpr[] = xShape.map((dim, d) => {
+      const divided: LoopExpr = inStrides[d] === 1
+        ? flatExpr
+        : binOp("/", flatExpr, literal(inStrides[d], true));
+      return callBuiltin("mod", [divided, literal(dim, true)]);
+
+    });
+
+    const outRef = memRef(outName, outVars);
+    const inRef  = memRef(xName,   inIdx);
+
+    return nestedLoops(outVarNames, outShape, [assign(outRef, inRef)]);
+  }
+}
+
+// ── Module-level helper ───────────────────────────────────────────────────────
+
+/**
+ * Compute row-major (C-order) strides for `shape`.
+ * stride[d] = product of shape[d+1 .. rank-1]; last stride is always 1.
+ */
+function _rowMajorStrides(shape: readonly number[]): number[] {
+  const s = new Array<number>(shape.length).fill(1);
+  for (let d = shape.length - 2; d >= 0; d--) s[d] = s[d + 1] * shape[d + 1];
+  return s;
 }

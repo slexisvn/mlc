@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/deadCodeEliminationPass.ts
 //
 // Dead Code Elimination (DCE) on the graph IR.
 //
@@ -22,10 +21,9 @@
 //   • Remove every tensor produced by a dead node (the tensor's producerNodeId
 //     is non-null and points to a dead node).
 //
-// Graph input tensors (producerNodeId === null) are never removed, even if they
-// are not consumed by any live node: they represent external feeds whose
-// removal would silently change the graph's calling convention.  A warning is
-// logged for unused graph inputs so the caller can inspect them.
+// Graph input tensors that are not consumed by any live node are removed from
+// both `inputIds` and the tensor map.  An info log entry is emitted for each
+// removed input so the caller can audit what was trimmed.
 //
 // Interaction with ConstantFoldingPass
 // ─────────────────────────────────────
@@ -115,15 +113,17 @@ export class DeadCodeEliminationPass implements Pass {
       });
     }
 
-    // ── Phase 3: warn about unconsumed graph-input tensors ────────────────────
-    // We intentionally do NOT remove graph inputs even if they are unused:
-    // they form part of the graph's external interface.
-    for (const inputTid of workGraph.inputIds) {
+    // ── Phase 3: remove unconsumed graph-input tensors ──────────────────────
+    // Snapshot inputIds before mutation so we iterate a stable list.
+    let removedInputs = 0;
+    for (const inputTid of [...workGraph.inputIds]) {
       if (!liveTensors.has(inputTid)) {
         const t = workGraph.tensors.get(inputTid);
+        workGraph._removeInputTensor(inputTid);
+        removedInputs++;
         logs.push({
-          level:   "warn",
-          message: `DCE: graph input "${inputTid}" (${t?.name ?? "?"}) is unused.`,
+          level:   "info",
+          message: `DCE: removed unused graph input "${inputTid}" (${t?.name ?? "?"}).`,
         });
       }
     }
@@ -131,10 +131,11 @@ export class DeadCodeEliminationPass implements Pass {
     logs.push({
       level:   "info",
       message: `DeadCodeEliminationPass complete: ${removedNodes} node(s) removed, ` +
-               `${removedTensors} tensor(s) removed.`,
+               `${removedTensors} tensor(s) removed, ${removedInputs} unused input(s) removed.`,
     });
 
-    return removedNodes > 0
+    const changed = removedNodes > 0 || removedInputs > 0;
+    return changed
       ? { graph: workGraph, changed: true,  logs }
       : { graph,            changed: false, logs };
   }

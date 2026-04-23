@@ -1,6 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ir/validateLoop.ts
-//
 // Structural validator for LoopModule.
 //
 // Invariants checked

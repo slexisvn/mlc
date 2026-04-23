@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// passes/layoutTransformPass.ts
 //
 // Layout-aware graph rewrite pass.
 //

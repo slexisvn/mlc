@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// bridge/importGraphIR.ts
 //
 // Bridge: GraphIR → compiler Graph
 //
